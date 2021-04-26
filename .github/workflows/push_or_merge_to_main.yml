@@ -11,9 +11,6 @@ jobs:
       BUILD_TYPE: "MERGE"
       OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
       OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-      GPG_KEYRING_FILE: "tbd"
-      GPG_KEY_ID: "tbd"
-      GPG_KEY_PASSPHRASE: "tbd"
     steps:
       - run: echo -e "PUSH/MERGE to main"
       - name: Set up JDK 8

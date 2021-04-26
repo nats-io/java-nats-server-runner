@@ -8,11 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUILD_TYPE: "PR"
-      OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-      OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-      GPG_KEYRING_FILE: "tbd"
-      GPG_KEY_ID: "tbd"
-      GPG_KEY_PASSPHRASE: "tbd"
     steps:
       - run: echo -e "PR Branch ${{ github.head_ref }}"
       - name: Set up JDK 8
