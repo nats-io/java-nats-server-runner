@@ -92,7 +92,7 @@ nexusPublishing {
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        mavenJava {
             from components.java
             artifact sourcesJar
             artifact javadocJar
