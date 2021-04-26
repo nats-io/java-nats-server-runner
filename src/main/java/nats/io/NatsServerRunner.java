@@ -97,6 +97,7 @@ public class NatsServerRunner implements AutoCloseable {
         }
     }
 
+
     public void start() throws IOException {
         List<String> cmd = new ArrayList<>();
 
@@ -167,11 +168,8 @@ public class NatsServerRunner implements AutoCloseable {
             cmd.addAll(Arrays.asList(customArgs));
         }
 
-        // Enable to debug verbosely 
-        // cmd.add("-DVV");
-
         if (debug) {
-            cmd.add("-DVV");
+            cmd.add("-DV");
         }
 
         cmdLine = String.join(" ", cmd);
