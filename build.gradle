@@ -1,34 +1,223 @@
+import org.gradle.internal.os.OperatingSystem
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'java-library'
+    id 'java'
     id 'maven-publish'
+    id 'signing'
+    id 'biz.aQute.bnd.builder' version '5.1.2'
+    id 'io.codearte.nexus-staging' version '0.21.0'
+    id "de.marcphilipp.nexus-publish" version "0.3.0"
 }
 
+def jarVersion = "1.0.0"
 group = 'io.nats'
 
 def isPr = System.getenv("BUILD_TYPE") == "PR"
-def v = "1.0.1"
-version = isPr ? v + "-SNAPSHOT" : v
+def isMerge = System.getenv("BUILD_TYPE") == "MERGE"
+
+// version is the variable the build actually uses.
+version = isPr ? jarVersion + "-SNAPSHOT" : jarVersion
+
+// Get signing properties set up from outside (env var can't handle the dot)
+if (System.getenv('OSSRH_USERNAME') != null) {
+    project.ext['ossrhUsername'] = System.getenv('OSSRH_USERNAME')
+    project.ext['ossrhPassword'] = System.getenv('OSSRH_PASSWORD')
+    project.ext['signing.secretKeyRingFile'] = System.getenv('GPG_KEYRING_FILE')
+    project.ext['signing.keyId'] = System.getenv('GPG_KEY_ID')
+    project.ext['signing.password'] =  System.getenv('GPG_KEY_PASSPHRASE')
+}
+
+// If these aren't set, just set them to empty so we don't have issues getting them
+if (!project.hasProperty('ossrhUsername')) {
+    project.ext['ossrhUsername'] = ""
+    project.ext['ossrhPassword'] = ""
+}
+
+tasks {
+    closeRepository {
+        onlyIf { nexusPublishing.useStaging.get() }
+    }
+    releaseRepository{
+        onlyIf { nexusPublishing.useStaging.get() }
+    }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 repositories {
     // Use jcenter for resolving dependencies.
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
-    mavenLocal()
+}
+
+dependencies {
+    implementation 'net.i2p.crypto:eddsa:0.3.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
+}
+
+jar {
+    manifest {
+        attributes('Automatic-Module-Name': 'io.nats.jnats-server-runner')
+    }
+    bnd (['Implementation-Title': 'Java Nats Server Runner',
+          'Implementation-Version': jarVersion,
+          'Implementation-Vendor': 'nats.io',
+          "Import-Package": "!net.i2p.crypto.eddsa.math",
+          "Import-Package": "net.i2p*",
+          "Import-Package": "io.nats*"]
+    )
+}
+
+test {
+    // Use junit platform for unit tests
+    useJUnitPlatform()
+}
+
+javadoc {
+    options.overview = 'src/main/javadoc/overview.html' // relative to source root
+    source = sourceSets.main.allJava
+    title = "NATS.IO Java Server Runner"
+    classpath = sourceSets.main.runtimeClasspath
+    doLast {
+        if (!OperatingSystem.current().isWindows()) {
+            exec {
+                println "Updating favicon on all html files"
+                workingDir 'build/docs/javadoc'
+                // Only on linux, mac at this point
+                commandLine 'find', '.', '-name', '*.html', '-exec', 'sed', '-i', '-e', 's#<head>#<head><link rel="icon" type="image/ico" href="favicon.ico">#', '{}', ';'
+            }
+            copy {
+                println "Copying images to javadoc folder"
+                from 'src/main/javadoc/images'
+                into 'build/docs/javadoc'
+            }
+        }
+    }
+}
+
+task javadocJar(type: Jar) {
+    archiveClassifier.set('javadoc')
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+if (isMerge) {
+    signing {
+        sign configurations.archives
+    }
+}
+
+nexusStaging {
+    packageGroup = group
+    username = project.getProperty('ossrhUsername')
+    password = project.getProperty('ossrhPassword')
+}
+
+if (isMerge) {
+    signing {
+        sign configurations.archives
+    }
+}
+
+nexusStaging {
+    packageGroup = group
+    username = project.getProperty('ossrhUsername')
+    password = project.getProperty('ossrhPassword')
 }
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            pom {
+                name = 'jnats-server-runner'
+                packaging = 'jar'
+                groupId = group
+                artifactId = archivesBaseName
+                description = 'Run the NATS.io server from java code.'
+                url = 'https://github.com/nats-io/nats.java'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = "synadia"
+                        name = "Synadia"
+                        email = "info@synadia.com"
+                        url = "https://nats.io"
+                    }
+                }
+                scm {
+                    url = 'https://github.com/nats-io/java-nats-server-runner'
+                }
+            }
+
+            pom.withXml {
+                def pomFile = file("${project.buildDir}/generated-pom.xml")
+                writeTo(pomFile)
+
+                if (isMerge) {
+                    def pomAscFile = signing.sign(pomFile).signatureFiles[0]
+                    artifact(pomAscFile) {
+                        classifier = null
+                        extension = 'pom.asc'
+                    }
+                }
+            }
+
+            // create the signed artifacts
+            if (isMerge) {
+                project.tasks.signArchives.signatureFiles.each {
+                    artifact(it) {
+                        def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
+                        if (matcher.find()) {
+                            classifier = matcher.group(1)
+                        } else {
+                            classifier = null
+                        }
+                        extension = 'jar.asc'
+                    }
+                }
+            }
         }
     }
-}
 
-dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
-}
+    nexusPublishing {
+        repositories {
+            sonatype {
+                username = project.getProperty('ossrhUsername')
+                password = project.getProperty('ossrhPassword')
+            }
+        }
+    }
 
-test {
-    // Use junit platform for unit tests
-    useJUnitPlatform()
+    model {
+        tasks.generatePomFileForMavenJavaPublication {
+            destination = file("$buildDir/generated-pom.xml")
+        }
+
+        tasks.publishMavenJavaPublicationToSonatypeRepository {
+            if (isMerge) {
+                dependsOn project.tasks.signArchives
+            }
+        }
+    }
 }
