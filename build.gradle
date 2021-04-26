@@ -3,8 +3,11 @@ plugins {
     id 'maven-publish'
 }
 
-version = "1.0.0-SNAPSHOT"
 group = 'io.nats'
+
+def isPr = System.getenv("BUILD_TYPE") == "PR"
+def v = "1.0.1"
+version = isPr ? v + "-SNAPSHOT" : v
 
 repositories {
     // Use jcenter for resolving dependencies.

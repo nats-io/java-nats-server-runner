@@ -7,6 +7,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Setup Custom Environment
+        env:
+          BUILD_TYPE: "PR"
       - run: echo -e "PR\nEVENT    ${{ github.event_name }}\nHEAD_REF ${{ github.head_ref }}\nBASE_REF ${{ github.ref }}"
       - name: Set up JDK 8
         uses: actions/setup-java@v2
