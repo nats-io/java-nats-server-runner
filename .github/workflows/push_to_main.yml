@@ -1,0 +1,14 @@
+name: GitHub Push To Main Actions For Nats Server Runner
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo -e "PUSH/MERGE TO MAIN\nEVENT    ${{ github.event_name }}\nHEAD_REF ${{ github.head_ref }}\nBASE_REF ${{ github.ref }}"
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - run: echo "🍏 This job's status is ${{ job.status }}."
