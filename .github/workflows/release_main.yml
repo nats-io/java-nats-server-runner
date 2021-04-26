@@ -25,7 +25,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v2
       - name: Build and Test
-        run: chmod +x gradlew && ./gradlew test
+        run: chmod +x gradlew && ./gradlew clean test
       - name: Publish
         if: ${{ success() }}
-        run: ./gradlew -i sign publishToSonatype
+        run: ./gradlew -i sign publishToSonatype closeAndReleaseSonatypeStagingRepository
