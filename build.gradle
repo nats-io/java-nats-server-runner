@@ -4,6 +4,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'io.github.gradle-nexus.publish-plugin' version '1.1.0'
+    id 'signing'
 }
 
 def jarVersion = "1.0.0"
@@ -15,21 +16,6 @@ def isRelease = System.getenv("BUILD_TYPE") == "RELEASE"
 
 // version is the variable the build actually uses.
 version = isPr || isMerge ? jarVersion + "-SNAPSHOT" : jarVersion
-
-// Get signing properties set up from outside (env var can't handle the dot)
-if (System.getenv('OSSRH_USERNAME') != null) {
-    project.ext['ossrhUsername'] = System.getenv('OSSRH_USERNAME')
-    project.ext['ossrhPassword'] = System.getenv('OSSRH_PASSWORD')
-    project.ext['signing.secretKeyRingFile'] = System.getenv('GPG_KEYRING_FILE')
-    project.ext['signing.keyId'] = System.getenv('GPG_KEY_ID')
-    project.ext['signing.password'] =  System.getenv('GPG_KEY_PASSPHRASE')
-}
-
-// If these aren't set, just set them to empty so we don't have issues getting them
-if (!project.hasProperty('ossrhUsername')) {
-    project.ext['ossrhUsername'] = ""
-    project.ext['ossrhPassword'] = ""
-}
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -87,17 +73,19 @@ artifacts {
     archives javadocJar, sourcesJar
 }
 
-if (isRelease) {
-    signing {
-        sign configurations.archives
-    }
+signing {
+    def signingKeyId = System.getenv('SIGNING_KEY_ID')
+    def signingKey = System.getenv('SIGNING_KEY')
+    def signingPassword = System.getenv('SIGNING_PASSWORD')
+    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+    sign configurations.archives
 }
 
 nexusPublishing {
     repositories {
         sonatype {
-            username = project.getProperty('ossrhUsername')
-            password = project.getProperty('ossrhPassword')
+            username = System.getenv('OSSRH_USERNAME')
+            password = System.getenv('OSSRH_PASSWORD')
         }
     }
 }
