@@ -14,7 +14,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - run: echo -e "Event: ${{ github.event_name }}\nPATH: ${{ github.event_path }}\nREF: ${{ github.ref }}\nREPO: ${{ github.repository }}"
+      - run: echo -e "Event ${{ github.event_name }}\nPATH ${{ github.event_path }}\nREF ${{ github.ref }}\nREPO ${{ github.repository }}"
       - name: Check out repository code
         uses: actions/checkout@v2
       - run: echo "🍏 This job's status is ${{ job.status }}."
