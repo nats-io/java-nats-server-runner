@@ -132,12 +132,6 @@ if (isMerge) {
     }
 }
 
-nexusStaging {
-    packageGroup = group
-    username = project.getProperty('ossrhUsername')
-    password = project.getProperty('ossrhPassword')
-}
-
 publishing {
     publications {
         mavenJava(MavenPublication) {
