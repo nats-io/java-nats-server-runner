@@ -7,7 +7,7 @@ plugins {
     id 'signing'
 }
 
-def jarVersion = "1.0.0"
+def jarVersion = "1.0.1"
 group = 'io.nats'
 
 def isPr = System.getenv("BUILD_TYPE") == "PR"
@@ -78,6 +78,7 @@ signing {
     def signingKey = System.getenv('SIGNING_KEY')
     def signingPassword = System.getenv('SIGNING_PASSWORD')
     useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+    sign publishing.publications.mavenJava
     sign configurations.archives
 }
 
