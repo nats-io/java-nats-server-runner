@@ -23,4 +23,4 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v2
       - name: Build and Test
-        run: chmod +x gradlew && ./gradlew --no-daemon test
+        run: chmod +x gradlew && ./gradlew test
