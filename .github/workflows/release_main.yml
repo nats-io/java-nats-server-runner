@@ -28,4 +28,4 @@ jobs:
         run: chmod +x gradlew && ./gradlew clean test
       - name: Publish
         if: ${{ success() }}
-        run: ./gradlew -i sign publishToSonatype closeAndReleaseSonatypeStagingRepository
+        run: ./gradlew -i signArchives signMavenJavaPublication publishToSonatype closeAndReleaseSonatypeStagingRepository
