@@ -15,11 +15,8 @@ jobs:
           distribution: 'adopt'
       - name: Check out repository code
         uses: actions/checkout@v2
-      - run: chmod +x gradlew && ./gradlew build
-      - run: echo "🍏 This job's status is ${{ job.status }}."
-      - name: Success
+      - name: Gradle Build
+        run: chmod +x gradlew && ./gradlew --no-daemon build
+      - name: Publish
         if: ${{ success() }}
-        run: echo "Success"
-      - name: Failure
-        if: ${{ failure() }}
-        run: echo "Failure"
+        run: ls build/libs
