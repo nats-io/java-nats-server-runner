@@ -16,7 +16,7 @@ jobs:
       SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
       SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
     steps:
-      - run: echo -e "RELEASE"
+      - run: echo -e "RELEASEx"
       - name: Set up JDK 8
         uses: actions/setup-java@v2
         with:
@@ -28,4 +28,4 @@ jobs:
         run: chmod +x gradlew && ./gradlew clean test
       - name: Publish
         if: ${{ success() }}
-        run: ./gradlew -i sign publishToSonatype closeAndReleaseSonatypeStagingRepository
+        run: ./gradlew -i sign publishMavenJavaPublicationToSonatypeRepository closeAndReleaseSonatypeStagingRepository
