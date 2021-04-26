@@ -1,0 +1,15 @@
+name: GitHub Release Main Actions For Nats Server Runner
+on:
+  release:
+    branches:
+      - main
+    types: [released]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo -e "EVENT    ${{ github.event_name }}\HEAD_REF ${{ github.head_ref }}\nBASE_REF ${{ github.ref }}"
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - run: echo "🍏 This job's status is ${{ job.status }}."

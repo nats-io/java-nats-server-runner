@@ -1,14 +1,7 @@
-name: GitHub Actions For Nats Server Runner
+name: GitHub Pull Request Actions For Nats Server Runner
 on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
-  push:
-    branches:
-      - main
-  release:
-    branches:
-      - main
-    types: [released]
 
 jobs:
   build:
