@@ -114,12 +114,6 @@ artifacts {
     archives javadocJar, sourcesJar
 }
 
-if (isMerge) {
-    signing {
-        sign configurations.archives
-    }
-}
-
 nexusStaging {
     packageGroup = group
     username = project.getProperty('ossrhUsername')
