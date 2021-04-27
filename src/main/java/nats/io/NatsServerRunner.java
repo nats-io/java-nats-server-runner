@@ -93,7 +93,7 @@ public class NatsServerRunner implements AutoCloseable {
      * <li>no custom args</li>
      * </ul>
      * and these options:
-     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param port the port to start on or &lt;=0 to use an automatically allocated port
      * @param debug whether to start the server with the -DV flags
      * @throws IOException thrown when the server cannot start
      */
@@ -109,7 +109,7 @@ public class NatsServerRunner implements AutoCloseable {
      * <li>no custom args</li>
      * </ul>
      * and these options:
-     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param port the port to start on or &lt;=0 to use an automatically allocated port
      * @param debug whether to start the server with the -DV flags
      * @param jetstream whether to enable JetStream
      * @throws IOException thrown when the server cannot start
@@ -159,7 +159,7 @@ public class NatsServerRunner implements AutoCloseable {
      * <li>no custom args</li>
      * </ul>
      * and these options:
-     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param port the port to start on or &lt;=0 to use an automatically allocated port
      * @param debug whether to start the server with the -DV flags
      * @param configFilePath path to a custom config file
      * @param configInserts an array of custom lines to add to the config file
@@ -177,7 +177,7 @@ public class NatsServerRunner implements AutoCloseable {
      * <li>no custom args</li>
      * </ul>
      * and these options:
-     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param port the port to start on or &lt;=0 to use an automatically allocated port
      * @param debug whether to start the server with the -DV flags
      * @param configFilePath path to a custom config file
      * @throws IOException thrown when the server cannot start
@@ -212,7 +212,7 @@ public class NatsServerRunner implements AutoCloseable {
      * </ul>
      * and these options:
      * @param customArgs any custom args to add to the command line
-     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param port the port to start on or &lt;=0 to use an automatically allocated port
      * @param debug whether to start the server with the -DV flags
      * @throws IOException thrown when the server cannot start
      */
@@ -223,7 +223,7 @@ public class NatsServerRunner implements AutoCloseable {
     /**
      * Construct and start the Nats Server runner with options
      *
-     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param port the port to start on or &lt;=0 to use an automatically allocated port
      * @param debug whether to start the server with the -DV flags
      * @param jetstream whether to enable JetStream
      * @param configFilePath path to a custom config file

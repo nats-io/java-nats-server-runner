@@ -33,7 +33,7 @@ public class NatsRunnerUtils {
     /**
      * Get a port number automatically allocated by the system, typically from an ephemeral port range.
      * @return the port number
-     * @throws IOException
+     * @throws IOException if there is a problem getting a port
      */
     public static int nextPort() throws IOException {
         try (ServerSocket socket = new ServerSocket(0)) {
