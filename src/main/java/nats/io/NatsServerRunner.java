@@ -29,7 +29,7 @@ public class NatsServerRunner implements AutoCloseable {
 
     private static final Logger LOGGER = Logger.getLogger(NatsServerRunner.class.getName());
 
-    private final int port;
+    private final int _port;
 
     private Process process;
     private final String cmdLine;
@@ -232,7 +232,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(int port, boolean debug, boolean jetstream, String configFilePath, String[] configInserts, String[] customArgs) throws IOException {
-        this.port = port <= 0 ? nextPort() : port;
+        _port = port <= 0 ? nextPort() : port;
 
         List<String> cmd = new ArrayList<>();
 
@@ -260,9 +260,9 @@ public class NatsServerRunner implements AutoCloseable {
                     portMatcher.reset(line);
 
                     if (portMatcher.find()) {
-                        line = line.replace(portMatcher.group(1), String.valueOf(port));
+                        line = line.replace(portMatcher.group(1), String.valueOf(_port));
                         cmd.add("--port");
-                        cmd.add(String.valueOf(port));
+                        cmd.add(String.valueOf(_port));
                     }
 
                     writer.write(line);
@@ -292,7 +292,7 @@ public class NatsServerRunner implements AutoCloseable {
             }
         } else {
             cmd.add("--port");
-            cmd.add(String.valueOf(port));
+            cmd.add(String.valueOf(_port));
         }
 
         if (jetstream) {
@@ -318,7 +318,7 @@ public class NatsServerRunner implements AutoCloseable {
 
             process = pb.start();
 
-            NatsOutputLogger.logOutput(LOGGER, process, NATS_SERVER, port);
+            NatsOutputLogger.logOutput(LOGGER, process, NATS_SERVER, _port);
 
             int tries = 10;
             // wait at least 1x and maybe 10
@@ -331,7 +331,7 @@ public class NatsServerRunner implements AutoCloseable {
                 tries--;
             } while (!process.isAlive() && tries > 0);
 
-            SocketAddress addr = new InetSocketAddress("localhost", port);
+            SocketAddress addr = new InetSocketAddress("localhost", _port);
             SocketChannel socketChannel = SocketChannel.open();
             socketChannel.configureBlocking(true);
             boolean scanning = true;
@@ -361,7 +361,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @return the port number
      */
     public int getPort() {
-        return port;
+        return _port;
     }
 
     /**
@@ -370,7 +370,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @return the uri string
      */
     public String getURI() {
-        return getURIForPort(port);
+        return getURIForPort(_port);
     }
 
     /**
