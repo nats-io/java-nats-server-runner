@@ -4,10 +4,18 @@
 package nats.io;
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NatsServerRunnerTest {
+
     @Test
-    void testSomeLibraryMethod() {
+    public void testConnection() throws IOException, InterruptedException {
+        try (NatsServerRunner ts = new NatsServerRunner(false)) {
+            assertTrue(ts.getPort() > 0);
+            assertTrue(ts.getURI().startsWith("nats://localhost"));
+        }
     }
 }
