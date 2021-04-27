@@ -19,3 +19,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Build and Test
         run: chmod +x gradlew && ./gradlew test
+      - name: Check Docs
+        if: ${{ success() }}
+        run: ./gradlew javadoc
