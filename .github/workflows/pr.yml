@@ -21,7 +21,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v2
       - name: Install Nats Server
-        run: chmod +x install-nats-server.sh && ./install-nats-server
+        run: ls -la && chmod +x install-nats-server.sh && ./install-nats-server
       - name: Build and Test
         run: chmod +x gradlew && ./gradlew test
       - name: Check Docs
