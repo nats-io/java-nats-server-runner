@@ -21,10 +21,20 @@ import java.util.ArrayList;
 public class NatsRunnerUtils {
     public static final String NATS_SERVER = "nats-server";
 
+    /**
+     * Build a standard nats://localhost:port uri
+     * @param port the port
+     * @return the uri
+     */
     public static String getURIForPort(int port) {
         return "nats://localhost:" + port;
     }
 
+    /**
+     * Get a port number automatically allocated by the system, typically from an ephemeral port range.
+     * @return the port number
+     * @throws IOException
+     */
     public static int nextPort() throws IOException {
         try (ServerSocket socket = new ServerSocket(0)) {
             while ( !socket.isBound() ) {
@@ -37,6 +47,10 @@ public class NatsRunnerUtils {
         }
     }
 
+    /**
+     * Get the version string from the nats server i.e. nats-server: v2.2.2
+     * @return the version string
+     */
     public static String getNatsServerVersionString() {
         ArrayList<String> cmd = new ArrayList<String>();
 

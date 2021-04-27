@@ -27,87 +27,213 @@ import static nats.io.NatsRunnerUtils.*;
 
 public class NatsServerRunner implements AutoCloseable {
 
-    private static Logger LOGGER = Logger.getLogger(NatsServerRunner.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(NatsServerRunner.class.getName());
 
     private final int port;
-    private final boolean debug;
-    private final boolean jetstream;
-    private final String[] customArgs;
-    private final String[] configInserts;
-    private final String configFilePath;
 
     private Process process;
-    private String cmdLine;
-    private final ProcessBuilder.Redirect errorRedirector = ProcessBuilder.Redirect.PIPE;
-    private final ProcessBuilder.Redirect outputRedirector = ProcessBuilder.Redirect.PIPE;
+    private final String cmdLine;
 
-    public void setLogger(Logger logger) {
-        if (logger == null) {
-            LOGGER = Logger.getLogger(NatsServerRunner.class.getName());
-        }
-        else {
-            LOGGER = logger;
-        }
-    }
-
+    /**
+     * Construct and start the Nats Server runner with all defaults:
+     * <ul>
+     * <li>use an automatically allocated port</li>
+     * <li>no debug flag</li>
+     * <li>jetstream not enabled</li>
+     * <li>no custom config file</li>
+     * <li>no config inserts</li>
+     * <li>no custom args</li>
+     * </ul>
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner() throws IOException {
-        this(0, false, false, null, null, null, true);
+        this(0, false, false, null, null, null);
     }
 
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>use an automatically allocated port</li>
+     * <li>jetstream not enabled</li>
+     * <li>no custom config file</li>
+     * <li>no config inserts</li>
+     * <li>no custom args</li>
+     * </ul>
+     * and this option:
+     * @param debug whether to start the server with the -DV flags
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner(boolean debug) throws IOException {
-        this(0, debug, false, null, null, null, true);
+        this(0, debug, false, null, null, null);
     }
 
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>use an automatically allocated port</li>
+     * <li>no custom config file</li>
+     * <li>no config inserts</li>
+     * <li>no custom args</li>
+     * </ul>
+     * and these options:
+     * @param debug whether to start the server with the -DV flags
+     * @param jetstream whether to enable JetStream
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner(boolean debug, boolean jetstream) throws IOException {
-        this(0, debug, jetstream, null, null, null, true);
+        this(0, debug, jetstream, null, null, null);
     }
 
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>jetstream not enabled</li>
+     * <li>no custom config file</li>
+     * <li>no config inserts</li>
+     * <li>no custom args</li>
+     * </ul>
+     * and these options:
+     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param debug whether to start the server with the -DV flags
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner(int port, boolean debug) throws IOException {
-        this(port, debug, false, null, null, null, true);
+        this(port, debug, false, null, null, null);
     }
 
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>no custom config file</li>
+     * <li>no config inserts</li>
+     * <li>no custom args</li>
+     * </ul>
+     * and these options:
+     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param debug whether to start the server with the -DV flags
+     * @param jetstream whether to enable JetStream
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner(int port, boolean debug, boolean jetstream) throws IOException {
-        this(port, debug, jetstream, null, null, null, true);
+        this(port, debug, jetstream, null, null, null);
     }
 
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>use an automatically allocated port</li>
+     * <li>jetstream not enabled</li>
+     * <li>no config inserts</li>
+     * <li>no custom args</li>
+     * </ul>
+     * and these options:
+     * @param debug whether to start the server with the -DV flags
+     * @param configFilePath path to a custom config file
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner(String configFilePath, boolean debug) throws IOException {
-        this(0, debug, false, configFilePath, null, null, true);
+        this(0, debug, false, configFilePath, null, null);
     }
 
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>use an automatically allocated port</li>
+     * <li>jetstream not enabled</li>
+     * <li>no custom config file</li>
+     * </ul>
+     * and these options:
+     * @param debug whether to start the server with the -DV flags
+     * @param jetstream whether to enable JetStream
+     * @param configFilePath path to a custom config file
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner(String configFilePath, boolean debug, boolean jetstream) throws IOException {
-        this(0, debug, jetstream, configFilePath, null, null, true);
+        this(0, debug, jetstream, configFilePath, null, null);
     }
 
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>jetstream not enabled</li>
+     * <li>no custom args</li>
+     * </ul>
+     * and these options:
+     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param debug whether to start the server with the -DV flags
+     * @param configFilePath path to a custom config file
+     * @param configInserts an array of custom lines to add to the config file
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner(String configFilePath, String[] configInserts, int port, boolean debug) throws IOException {
-        this(port, debug, false, configFilePath, configInserts, null, true);
+        this(port, debug, false, configFilePath, configInserts, null);
     }
 
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>jetstream not enabled</li>
+     * <li>no config inserts</li>
+     * <li>no custom args</li>
+     * </ul>
+     * and these options:
+     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param debug whether to start the server with the -DV flags
+     * @param configFilePath path to a custom config file
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner(String configFilePath, int port, boolean debug) throws IOException {
-        this(port, debug, false, configFilePath, null, null, true);
+        this(port, debug, false, configFilePath, null, null);
     }
 
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>use an automatically allocated port</li>
+     * <li>jetstream not enabled</li>
+     * <li>no custom config file</li>
+     * <li>no config inserts</li>
+     * </ul>
+     * and these options:
+     * @param debug whether to start the server with the -DV flags
+     * @param customArgs any custom args to add to the command line
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner(String[] customArgs, boolean debug) throws IOException {
-        this(0, debug, false, null, null, customArgs, true);
+        this(0, debug, false, null, null, customArgs);
     }
 
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>jetstream not enabled</li>
+     * <li>no custom config file</li>
+     * <li>no config inserts</li>
+     * </ul>
+     * and these options:
+     * @param customArgs any custom args to add to the command line
+     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param debug whether to start the server with the -DV flags
+     * @throws IOException thrown when the server cannot start
+     */
     public NatsServerRunner(String[] customArgs, int port, boolean debug) throws IOException {
-        this(port, debug, false, null, null, customArgs, true);
+        this(port, debug, false, null, null, customArgs);
     }
 
-    public NatsServerRunner(int port, boolean debug, boolean jetstream, String configFilePath, String[] configInserts, String[] customArgs, boolean autoStart) throws IOException {
+    /**
+     * Construct and start the Nats Server runner with options
+     *
+     * @param port the port to start on or <=0 to use an automatically allocated port
+     * @param debug whether to start the server with the -DV flags
+     * @param jetstream whether to enable JetStream
+     * @param configFilePath path to a custom config file
+     * @param configInserts an array of custom lines to add to the config file
+     * @param customArgs any custom args to add to the command line
+     * @throws IOException thrown when the server cannot start
+     */
+    public NatsServerRunner(int port, boolean debug, boolean jetstream, String configFilePath, String[] configInserts, String[] customArgs) throws IOException {
         this.port = port <= 0 ? nextPort() : port;
-        this.debug = debug;
-        this.jetstream = jetstream;
-        this.customArgs = customArgs;
-        this.configInserts = configInserts;
-        this.configFilePath = configFilePath;
-        if (autoStart) {
-            start();
-        }
-    }
 
-
-    public void start() throws IOException {
         List<String> cmd = new ArrayList<>();
 
         String server_path = System.getenv("nats_server_path");
@@ -185,10 +311,9 @@ public class NatsServerRunner implements AutoCloseable {
 
         try {
             ProcessBuilder pb = new ProcessBuilder(cmd);
-
             pb.redirectErrorStream(true);
-            pb.redirectError(errorRedirector);
-            pb.redirectOutput(outputRedirector);
+            pb.redirectError(ProcessBuilder.Redirect.PIPE);
+            pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
             LOGGER.info("%%% Starting [" + cmdLine + "] with redirected IO");
 
             process = pb.start();
@@ -230,36 +355,52 @@ public class NatsServerRunner implements AutoCloseable {
         }
     }
 
+    /**
+     * Get the port number. Useful if it was automatically assigned
+     *
+     * @return the port number
+     */
     public int getPort() {
         return port;
     }
 
+    /**
+     * Get the uri in the form nats://localhost:port
+     *
+     * @return the uri string
+     */
     public String getURI() {
         return getURIForPort(port);
     }
 
+    /**
+     * Shut the server down
+     *
+     * @param wait whether to block while waiting for the process to shutdown
+     * @throws InterruptedException if the wait was interrupted
+     */
     public void shutdown(boolean wait) throws InterruptedException {
-
-        if (process == null) {
-            return;
+        if (process != null) {
+            process.destroy();
+            LOGGER.info("%%% Shut down [" + cmdLine + "]");
+            if (wait) {
+                process.waitFor();
+            }
+            process = null;
         }
-
-        process.destroy();
-
-        LOGGER.info("%%% Shut down [" + cmdLine + "]");
-
-        if (wait)
-            process.waitFor();
-
-        process = null;
     }
 
+    /**
+     * Shut the server down, waiting (blocking)
+     *
+     * @throws InterruptedException if the wait was interrupted
+     */
     public void shutdown() throws InterruptedException {
         shutdown(true);
     }
 
     /**
-     * Synonymous with shutdown.
+     * For AutoCloseable, synonymous with shutdown.
      */
     public void close() throws InterruptedException {
         shutdown();
