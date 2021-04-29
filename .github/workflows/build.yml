@@ -1,4 +1,5 @@
 name: GitHub Build Actions For Nats Server Runner
+
 on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
