@@ -2,9 +2,7 @@
 
 # Java Nats Server Runner
 
-Run the Nats Server from your Java code. 
-
-A [Java](http://java.com) client for the [NATS messaging system](https://nats.io).
+Run the [NATS messaging system](https://nats.io) Server from your Java code. 
 
 [![License Apache 2](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.nats/jnats-server-runner/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.nats/jnats-server-runner)
