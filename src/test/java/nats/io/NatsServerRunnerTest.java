@@ -13,9 +13,9 @@ class NatsServerRunnerTest {
 
     @Test
     public void testConnection() throws IOException, InterruptedException {
-        try (NatsServerRunner ts = new NatsServerRunner(false)) {
-            assertTrue(ts.getPort() > 0);
-            assertTrue(ts.getURI().startsWith("nats://localhost"));
+        try (NatsServerRunner server = new NatsServerRunner()) {
+            assertTrue(server.getPort() > 0);
+            assertTrue(server.getURI().startsWith("nats://localhost"));
         }
     }
 }
