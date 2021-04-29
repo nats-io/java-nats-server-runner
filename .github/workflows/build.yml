@@ -38,7 +38,7 @@ jobs:
           cd nats-server
           go build main.go
           mkdir -p ~/.local/bin
-          cp main /usr/local/bin/nats-server
+          cp main ~/.local/bin/nats-server
           cd ..
           rm -rf nats-server
           nats_server -v
