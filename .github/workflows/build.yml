@@ -41,7 +41,7 @@ jobs:
           cp main ~/.local/bin/nats-server
           cd ..
           rm -rf nats-server
-          nats_server -v
+          nats-server -v
       - name: Check out code
         uses: actions/checkout@v2
       - name: Build and Test
