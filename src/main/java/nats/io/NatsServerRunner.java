@@ -261,8 +261,6 @@ public class NatsServerRunner implements AutoCloseable {
 
                     if (portMatcher.find()) {
                         line = line.replace(portMatcher.group(1), String.valueOf(_port));
-                        cmd.add("--port");
-                        cmd.add(String.valueOf(_port));
                     }
 
                     writer.write(line);
