@@ -30,6 +30,7 @@ public class NatsServerRunner implements AutoCloseable {
     private static final Logger LOGGER = Logger.getLogger(NatsServerRunner.class.getName());
 
     private final int _port;
+    private final File configFile;
 
     private Process process;
     private final String cmdLine;
@@ -190,6 +191,23 @@ public class NatsServerRunner implements AutoCloseable {
      * Construct and start the Nats Server runner with defaults:
      * <ul>
      * <li>use an automatically allocated port</li>
+     * <li>no debug flag</li>
+     * <li>jetstream not enabled</li>
+     * <li>no custom config file</li>
+     * <li>no config inserts</li>
+     * </ul>
+     * and these options:
+     * @param customArgs any custom args to add to the command line
+     * @throws IOException thrown when the server cannot start
+     */
+    public NatsServerRunner(String[] customArgs) throws IOException {
+        this(0, false, false, null, null, customArgs);
+    }
+
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>use an automatically allocated port</li>
      * <li>jetstream not enabled</li>
      * <li>no custom config file</li>
      * <li>no config inserts</li>
@@ -201,6 +219,23 @@ public class NatsServerRunner implements AutoCloseable {
      */
     public NatsServerRunner(String[] customArgs, boolean debug) throws IOException {
         this(0, debug, false, null, null, customArgs);
+    }
+
+    /**
+     * Construct and start the Nats Server runner with defaults:
+     * <ul>
+     * <li>use an automatically allocated port</li>
+     * <li>no custom config file</li>
+     * <li>no config inserts</li>
+     * </ul>
+     * and these options:
+     * @param customArgs any custom args to add to the command line
+     * @param debug whether to start the server with the -DV flags
+     * @param jetstream whether to enable JetStream
+     * @throws IOException thrown when the server cannot start
+     */
+    public NatsServerRunner(String[] customArgs, boolean debug, boolean jetstream) throws IOException {
+        this(0, debug, jetstream, null, null, customArgs);
     }
 
     /**
@@ -220,6 +255,7 @@ public class NatsServerRunner implements AutoCloseable {
         this(port, debug, false, null, null, customArgs);
     }
 
+
     /**
      * Construct and start the Nats Server runner with options
      *
@@ -236,67 +272,41 @@ public class NatsServerRunner implements AutoCloseable {
 
         List<String> cmd = new ArrayList<>();
 
-        String server_path = System.getenv("nats_server_path");
-
-        if (server_path == null) {
-            server_path = NATS_SERVER;
+        String serverPath = System.getenv(NATS_SERVER_PATH_ENV);
+        if (serverPath == null) {
+            serverPath = DEFAULT_NATS_SERVER;
         }
 
-        cmd.add(server_path);
+        cmd.add(serverPath);
+
+        try {
+            configFile = File.createTempFile(CONF_FILE_PREFIX, CONF_FILE_EXT);
+            BufferedWriter writer = new BufferedWriter(new FileWriter(configFile));
+            if (configFilePath == null || processSuppliedConfigFile(writer, configFilePath)) {
+                writePortLine(writer, _port);
+            }
+
+            if (configInserts != null) {
+                for (String s : configInserts) {
+                    writeLine(writer, s);
+                }
+            }
+
+            writer.flush();
+            writer.close();
+
+            cmd.add(CONFIG_FILE_OPTION_NAME);
+            cmd.add(configFile.getAbsolutePath());
+        }
+        catch (IOException ioe) {
+            LOGGER.severe("%%% Error creating config file: " + ioe);
+            throw ioe;
+        }
 
         // Rewrite the port to a new one, so we don't reuse the same one over and over
-        if (configFilePath != null) {
-            Pattern portPattern = Pattern.compile("port: (\\d+)");
-            Matcher portMatcher = portPattern.matcher("");
-            File tmp;
-
-            try {
-                tmp = File.createTempFile("nats_java_test", ".conf");
-                BufferedWriter writer = new BufferedWriter(new FileWriter(tmp));
-                BufferedReader reader = new BufferedReader(new FileReader(configFilePath));
-
-                String line = reader.readLine();
-                while (line != null) {
-                    portMatcher.reset(line);
-
-                    if (portMatcher.find()) {
-                        line = line.replace(portMatcher.group(1), String.valueOf(_port));
-                        cmd.add("--port");
-                        cmd.add(String.valueOf(_port));
-                    }
-
-                    writer.write(line);
-                    writer.write("\n");
-
-                    line = reader.readLine();
-                }
-
-                reader.close();
-
-                if (configInserts != null) {
-                    for (String s : configInserts) {
-                        writer.write(s);
-                        writer.write("\n");
-                    }
-                }
-
-                writer.flush();
-                writer.close();
-
-                cmd.add("--config");
-                cmd.add(tmp.getAbsolutePath());
-            }
-            catch (IOException ioe) {
-                LOGGER.severe("%%% Error processing config file: " + ioe);
-                throw ioe;
-            }
-        } else {
-            cmd.add("--port");
-            cmd.add(String.valueOf(_port));
-        }
 
         if (jetstream) {
-            cmd.add("-js");
+            cmd.add(JETSTREAM_OPTION);
         }
 
         if (customArgs != null) {
@@ -304,7 +314,7 @@ public class NatsServerRunner implements AutoCloseable {
         }
 
         if (debug) {
-            cmd.add("-DV");
+            cmd.add(DEBUG_OPTION);
         }
 
         cmdLine = String.join(" ", cmd);
@@ -318,7 +328,7 @@ public class NatsServerRunner implements AutoCloseable {
 
             process = pb.start();
 
-            NatsOutputLogger.logOutput(LOGGER, process, NATS_SERVER, _port);
+            NatsOutputLogger.logOutput(LOGGER, process, DEFAULT_NATS_SERVER, _port);
 
             int tries = 10;
             // wait at least 1x and maybe 10
@@ -355,6 +365,44 @@ public class NatsServerRunner implements AutoCloseable {
         }
     }
 
+    private boolean processSuppliedConfigFile(BufferedWriter writer, String configFilePath) throws IOException {
+        Pattern portPattern = Pattern.compile(PORT_REGEX);
+        Matcher portMatcher = portPattern.matcher("");
+
+        BufferedReader reader = new BufferedReader(new FileReader(configFilePath));
+
+        boolean needsPortLine = true;
+        String line = reader.readLine();
+        while (line != null) {
+            portMatcher.reset(line);
+
+            // replacing it here allows us to not care if the port is at the top level
+            // or for instance inside a websocket block
+            if (portMatcher.find()) {
+                writeLine(writer, line.replace(portMatcher.group(1), String.valueOf(_port)));
+                needsPortLine = false;
+            }
+            else {
+                writeLine(writer, line);
+            }
+
+            line = reader.readLine();
+        }
+
+        reader.close();
+
+        return needsPortLine;
+    }
+
+    private void writePortLine(BufferedWriter writer, int port) throws IOException {
+        writeLine(writer, PORT_PROPERTY + port);
+    }
+
+    private void writeLine(BufferedWriter writer, String line) throws IOException {
+        writer.write(line);
+        writer.write("\n");
+    }
+
     /**
      * Get the port number. Useful if it was automatically assigned
      *
@@ -365,12 +413,30 @@ public class NatsServerRunner implements AutoCloseable {
     }
 
     /**
+     * Get the absolute path of the config file
+     *
+     * @return the path
+     */
+    public String getConfigFile() {
+        return configFile.getAbsolutePath();
+    }
+
+    /**
      * Get the uri in the form nats://localhost:port
      *
      * @return the uri string
      */
     public String getURI() {
         return getURIForPort(_port);
+    }
+
+    /**
+     * Get the command line used to start the server
+     *
+     * @return the command line
+     */
+    public String getCmdLine() {
+        return cmdLine;
     }
 
     /**

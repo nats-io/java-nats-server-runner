@@ -8,7 +8,7 @@ plugins {
     id 'signing'
 }
 
-def jarVersion = "1.0.6"
+def jarVersion = "1.0.7"
 group = 'io.nats'
 
 def isPr = System.getenv("BUILD_EVENT") == "pull_request"
@@ -16,7 +16,7 @@ def isMerge = System.getenv("BUILD_EVENT") == "push"
 def isRelease = System.getenv("BUILD_EVENT") == "release"
 
 // version is the variable the build actually uses.
-version = isPr || isMerge ? jarVersion + "-SNAPSHOT" : jarVersion
+version = isRelease ? jarVersion : jarVersion + "-SNAPSHOT"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8

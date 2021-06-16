@@ -19,7 +19,19 @@ import java.net.ServerSocket;
 import java.util.ArrayList;
 
 public class NatsRunnerUtils {
-    public static final String NATS_SERVER = "nats-server";
+    public static final String NATS_SERVER_PATH_ENV = "nats_server_path";
+    public static final String DEFAULT_NATS_SERVER = "nats-server";
+
+    public static final String CONFIG_FILE_OPTION_NAME = "--config";
+    public static final String VERSION_OPTION = "--version";
+    public static final String DEBUG_OPTION = "-DV";
+    public static final String JETSTREAM_OPTION = "-js";
+
+    public static final String CONF_FILE_PREFIX = "nats_java_test";
+    public static final String CONF_FILE_EXT = ".conf";
+    public static final String PORT_REGEX = "port: (\\d+)";
+    public static final String PORT_PROPERTY = "port: ";
+
 
     /**
      * Build a standard nats://localhost:port uri
@@ -38,6 +50,7 @@ public class NatsRunnerUtils {
     public static int nextPort() throws IOException {
         try (ServerSocket socket = new ServerSocket(0)) {
             while ( !socket.isBound() ) {
+                //noinspection BusyWait
                 Thread.sleep(50);
             }
             return socket.getLocalPort();
@@ -54,14 +67,14 @@ public class NatsRunnerUtils {
     public static String getNatsServerVersionString() {
         ArrayList<String> cmd = new ArrayList<String>();
 
-        String server_path = System.getenv("nats_server_path");
+        String server_path = System.getenv(NATS_SERVER_PATH_ENV);
 
         if(server_path == null){
-            server_path = NATS_SERVER;
+            server_path = DEFAULT_NATS_SERVER;
         }
 
         cmd.add(server_path);
-        cmd.add("--version");
+        cmd.add(VERSION_OPTION);
 
         try {
             ProcessBuilder pb = new ProcessBuilder(cmd);
