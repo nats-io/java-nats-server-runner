@@ -137,30 +137,40 @@ class NatsServerRunnerTest {
 
     private static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"2.11.5\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
     private void connect(NatsServerRunner runner) throws IOException {
-        System.out.println("\n\n" + runner.getCmdLine() + " " + runner.getPort() + " " + runner.getURI());
-        Socket socket = new Socket();
-        SocketAddress socketAddress = new InetSocketAddress(InetAddress.getLocalHost(), runner.getPort());
-        socket.bind(socketAddress);
-        socket.connect(socketAddress);
-        assertEquals(runner.getPort(), socket.getLocalPort());
-
-        socket.getOutputStream().write(CONNECT_BYTES);
-        socket.getOutputStream().flush();
-
-        InputStream in = socket.getInputStream();
-        // give the server time to respond or this flaps
         try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            // ignore
+            Socket socket = new Socket();
+            SocketAddress socketAddress = new InetSocketAddress(InetAddress.getLocalHost(), runner.getPort());
+            socket.bind(socketAddress);
+            socket.connect(socketAddress);
+            assertEquals(runner.getPort(), socket.getLocalPort());
+
+            socket.getOutputStream().write(CONNECT_BYTES);
+            socket.getOutputStream().flush();
+
+            InputStream in = socket.getInputStream();
+            // give the server time to respond or this flaps
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                // ignore
+            }
+            assertTrue(in.available() > 8); // want to make sure CONNECT is there
+            int x = -1;
+            int i = in.read();
+            while (i != -1 && x++ < 8) {
+                assertEquals(CONNECT_BYTES[x], i);
+                i = in.read();
+            }
+            in.close();
         }
-        assertTrue(in.available() > 8); // want to make sure CONNECT is there
-        int x = -1;
-        int i = in.read();
-        while (i != -1 && x++ < 8) {
-            assertEquals(CONNECT_BYTES[x], i);
-            i = in.read();
+        catch (IOException ioe) {
+            try {
+                throw new Exception("\n\n!!!!\n" + runner.getCmdLine() + " " + runner.getPort() + " " + runner.getURI() + "\n\n");
+            }
+            catch (Exception e) {
+                System.out.println(e);
+            }
+            throw ioe;
         }
-        in.close();
     }
 }
