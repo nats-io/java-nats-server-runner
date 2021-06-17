@@ -137,6 +137,7 @@ class NatsServerRunnerTest {
 
     private static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"2.11.5\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
     private void connect(NatsServerRunner runner) throws IOException {
+        System.out.println("\n\n" + runner.getCmdLine() + " " + runner.getPort() + " " + runner.getURI());
         Socket socket = new Socket();
         SocketAddress socketAddress = new InetSocketAddress(InetAddress.getLocalHost(), runner.getPort());
         socket.bind(socketAddress);
