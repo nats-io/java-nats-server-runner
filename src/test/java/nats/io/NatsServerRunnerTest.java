@@ -7,12 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -75,20 +73,26 @@ class NatsServerRunnerTest {
         }
     }
 
+    private static Stream<Arguments> withConfigArgs() {
+        return Stream.of(
+                Arguments.of("port_not_specified.conf", true),
+                Arguments.of("port_specified.conf", true),
+                Arguments.of("websocket.conf", false),
+                Arguments.of("ws.conf", false)
+        );
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {
-            "port_not_specified.conf",
-            "port_specified.conf",
-            "websocket.conf",
-            "ws.conf"
-    })
-    public void testWithConfig(String configFile) throws IOException, InterruptedException {
+    @MethodSource("withConfigArgs")
+    public void testWithConfig(String configFile, boolean checkConnect) throws IOException, InterruptedException {
         String[] configInserts = { "# custom insert this comment " + configFile };
         try (NatsServerRunner runner = new NatsServerRunner(SOURCE_CONFIG_FILE_PATH + configFile, configInserts, -1, false)) {
             validateCommandLine(runner, false, false);
             validateHostAndPort(runner);
             validateConfigLines(runner, configFile, configInserts);
-            connect(runner);
+            if (checkConnect) {
+                connect(runner);
+            }
         }
     }
 
@@ -137,34 +141,37 @@ class NatsServerRunnerTest {
 
     private static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"2.11.5\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
     private void connect(NatsServerRunner runner) throws IOException {
+        Socket socket = new Socket();
+        SocketAddress socketAddress = new InetSocketAddress("127.0.0.1", runner.getPort());
+        socket.connect(socketAddress);
+        assertEquals(runner.getPort(), socket.getPort());
+
+        socket.getOutputStream().write(CONNECT_BYTES);
+        socket.getOutputStream().flush();
+
+        InputStream in = socket.getInputStream();
+        // give the server time to respond or this flaps
         try {
-            Socket socket = new Socket();
-            SocketAddress socketAddress = new InetSocketAddress(InetAddress.getLocalHost(), runner.getPort());
-            socket.bind(socketAddress);
-            socket.connect(socketAddress);
-            assertEquals(runner.getPort(), socket.getLocalPort());
-
-            socket.getOutputStream().write(CONNECT_BYTES);
-            socket.getOutputStream().flush();
-
-            InputStream in = socket.getInputStream();
-            // give the server time to respond or this flaps
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                // ignore
-            }
-            assertTrue(in.available() > 8); // want to make sure CONNECT is there
-            int x = -1;
-            int i = in.read();
-            while (i != -1 && x++ < 8) {
-                assertEquals(CONNECT_BYTES[x], i);
-                i = in.read();
-            }
-            in.close();
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            // ignore
         }
-        catch (IOException ioe) {
-            throw new RuntimeException("\n\n!!!!\n" + runner.getCmdLine() + " " + runner.getPort() + " " + runner.getURI() + "\n" + ioe.getMessage() + "\n");
+
+        StringBuilder sb = new StringBuilder();
+        int cr = 0;
+        int i = in.read();
+        while (i != -1) {
+            sb.append((char)i);
+            if (i == 13) {
+                cr++;
+            }
+            i = (cr > 1) ? -1 : in.read();
         }
+        in.close();
+        System.out.println(sb.toString());
+
+        String sbs = sb.toString().trim();
+        assertTrue(sbs.startsWith("INFO"));
+        assertTrue(sbs.contains("\"port\":" + runner.getPort()));
     }
 }
