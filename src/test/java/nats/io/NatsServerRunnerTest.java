@@ -137,35 +137,29 @@ class NatsServerRunnerTest {
 
     private static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"2.11.5\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
     private void connect(NatsServerRunner runner) throws IOException {
+        Socket socket = new Socket();
+        SocketAddress socketAddress = new InetSocketAddress(InetAddress.getLocalHost(), runner.getPort());
+        socket.bind(socketAddress);
+        socket.connect(socketAddress);
+        assertEquals(runner.getPort(), socket.getLocalPort());
+
+        socket.getOutputStream().write(CONNECT_BYTES);
+        socket.getOutputStream().flush();
+
+        InputStream in = socket.getInputStream();
+        // give the server time to respond or this flaps
         try {
-            Socket socket = new Socket();
-            SocketAddress socketAddress = new InetSocketAddress(InetAddress.getLocalHost(), runner.getPort());
-            socket.bind(socketAddress);
-            socket.connect(socketAddress);
-            assertEquals(runner.getPort(), socket.getLocalPort());
-
-            socket.getOutputStream().write(CONNECT_BYTES);
-            socket.getOutputStream().flush();
-
-            InputStream in = socket.getInputStream();
-            // give the server time to respond or this flaps
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                // ignore
-            }
-            assertTrue(in.available() > 8); // want to make sure CONNECT is there
-            int x = -1;
-            int i = in.read();
-            while (i != -1 && x++ < 8) {
-                assertEquals(CONNECT_BYTES[x], i);
-                i = in.read();
-            }
-            in.close();
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            // ignore
         }
-        catch (IOException ioe) {
-            System.out.println(ioe);
-            throw ioe;
+        assertTrue(in.available() > 8); // want to make sure CONNECT is there
+        int x = -1;
+        int i = in.read();
+        while (i != -1 && x++ < 8) {
+            assertEquals(CONNECT_BYTES[x], i);
+            i = in.read();
         }
+        in.close();
     }
 }
