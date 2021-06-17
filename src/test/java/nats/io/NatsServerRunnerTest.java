@@ -168,7 +168,6 @@ class NatsServerRunnerTest {
             i = (cr > 1) ? -1 : in.read();
         }
         in.close();
-        System.out.println(sb.toString());
 
         String sbs = sb.toString().trim();
         assertTrue(sbs.startsWith("INFO"));
