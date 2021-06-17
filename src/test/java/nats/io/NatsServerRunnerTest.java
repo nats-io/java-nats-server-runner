@@ -164,13 +164,7 @@ class NatsServerRunnerTest {
             in.close();
         }
         catch (IOException ioe) {
-            try {
-                throw new Exception("\n\n!!!!\n" + runner.getCmdLine() + " " + runner.getPort() + " " + runner.getURI() + "\n\n");
-            }
-            catch (Exception e) {
-                System.out.println(e);
-            }
-            throw ioe;
+            throw new RuntimeException("\n\n!!!!\n" + runner.getCmdLine() + " " + runner.getPort() + " " + runner.getURI() + "\n" + ioe.getMessage() + "\n");
         }
     }
 }
