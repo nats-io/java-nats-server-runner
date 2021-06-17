@@ -165,6 +165,7 @@ class NatsServerRunnerTest {
         }
         catch (IOException ioe) {
             System.out.println(ioe);
+            throw ioe;
         }
     }
 }
