@@ -133,7 +133,6 @@ class NatsServerRunnerTest {
         assertTrue(lines.contains("port: " + runner.getPort()));
         if (expected != null) {
             for (String ex : expected) {
-                System.out.println("EX " + ex);
                 assertTrue(lines.contains(ex));
             }
         }
