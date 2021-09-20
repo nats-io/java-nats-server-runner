@@ -32,6 +32,7 @@ public class NatsRunnerUtils {
     public static final String PORT_REGEX = "port: (\\d+)";
     public static final String PORT_PROPERTY = "port: ";
 
+    private static String SERVER_PATH = null;
 
     /**
      * Build a standard nats://localhost:port uri
@@ -40,6 +41,18 @@ public class NatsRunnerUtils {
      */
     public static String getURIForPort(int port) {
         return "nats://localhost:" + port;
+    }
+
+    /**
+     * Set the path for the
+     * @param serverPath
+     */
+    public static void setServerPath(String serverPath) {
+        SERVER_PATH = serverPath;
+    }
+
+    public static void clearServerPath() {
+        SERVER_PATH = null;
     }
 
     /**
@@ -67,13 +80,13 @@ public class NatsRunnerUtils {
     public static String getNatsServerVersionString() {
         ArrayList<String> cmd = new ArrayList<String>();
 
-        String server_path = System.getenv(NATS_SERVER_PATH_ENV);
-
-        if(server_path == null){
-            server_path = DEFAULT_NATS_SERVER;
+        // order of precedence is environment, value set statically, default
+        String serverPath = System.getenv(NATS_SERVER_PATH_ENV);
+        if (serverPath == null){
+            serverPath = SERVER_PATH == null ? DEFAULT_NATS_SERVER : SERVER_PATH;
         }
 
-        cmd.add(server_path);
+        cmd.add(serverPath);
         cmd.add(VERSION_OPTION);
 
         try {

@@ -8,10 +8,9 @@ plugins {
     id 'signing'
 }
 
-def jarVersion = "1.0.7"
+def jarVersion = "1.0.8"
 group = 'io.nats'
 
-def isPr = System.getenv("BUILD_EVENT") == "pull_request"
 def isMerge = System.getenv("BUILD_EVENT") == "push"
 def isRelease = System.getenv("BUILD_EVENT") == "release"
 
@@ -74,11 +73,13 @@ artifacts {
     archives javadocJar, sourcesJar
 }
 
-nexusPublishing {
-    repositories {
-        sonatype {
-            username = System.getenv('OSSRH_USERNAME')
-            password = System.getenv('OSSRH_PASSWORD')
+if (isMerge || isRelease) {
+    nexusPublishing {
+        repositories {
+            sonatype {
+                username = System.getenv('OSSRH_USERNAME')
+                password = System.getenv('OSSRH_PASSWORD')
+            }
         }
     }
 }
