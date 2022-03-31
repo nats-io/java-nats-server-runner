@@ -272,12 +272,7 @@ public class NatsServerRunner implements AutoCloseable {
 
         List<String> cmd = new ArrayList<>();
 
-        String serverPath = System.getenv(NATS_SERVER_PATH_ENV);
-        if (serverPath == null) {
-            serverPath = DEFAULT_NATS_SERVER;
-        }
-
-        cmd.add(serverPath);
+        cmd.add(getResolvedServerPath());
 
         try {
             configFile = File.createTempFile(CONF_FILE_PREFIX, CONF_FILE_EXT);

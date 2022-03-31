@@ -55,6 +55,14 @@ public class NatsRunnerUtils {
         SERVER_PATH = null;
     }
 
+    public static String getResolvedServerPath() {
+        String serverPath = System.getenv(NATS_SERVER_PATH_ENV);
+        if (serverPath == null){
+            serverPath = SERVER_PATH == null ? DEFAULT_NATS_SERVER : SERVER_PATH;
+        }
+        return serverPath;
+    }
+
     /**
      * Get a port number automatically allocated by the system, typically from an ephemeral port range.
      * @return the port number
@@ -81,12 +89,8 @@ public class NatsRunnerUtils {
         ArrayList<String> cmd = new ArrayList<String>();
 
         // order of precedence is environment, value set statically, default
-        String serverPath = System.getenv(NATS_SERVER_PATH_ENV);
-        if (serverPath == null){
-            serverPath = SERVER_PATH == null ? DEFAULT_NATS_SERVER : SERVER_PATH;
-        }
 
-        cmd.add(serverPath);
+        cmd.add(getResolvedServerPath());
         cmd.add(VERSION_OPTION);
 
         try {
