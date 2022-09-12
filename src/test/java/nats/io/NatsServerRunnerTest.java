@@ -59,6 +59,9 @@ class NatsServerRunnerTest {
             validateConfigLines(runner);
             connect(runner);
         }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test

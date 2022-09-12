@@ -57,7 +57,7 @@ public class NatsRunnerUtils {
 
     public static String getResolvedServerPath() {
         String serverPath = System.getenv(NATS_SERVER_PATH_ENV);
-        if (serverPath == null){
+        if (serverPath == null) {
             serverPath = SERVER_PATH == null ? DEFAULT_NATS_SERVER : SERVER_PATH;
         }
         return serverPath;
