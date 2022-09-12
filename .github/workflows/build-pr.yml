@@ -31,7 +31,7 @@ jobs:
           mv nats-server ns
           cp ns/main nats-server
           echo $nats_server_path
-          nats-server -v
+          ./nats-server -v
           $nats_server_path -v
       - name: Check out code
         uses: actions/checkout@v2
