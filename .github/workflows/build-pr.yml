@@ -33,6 +33,7 @@ jobs:
       - name: Build and Test
         run: |
           export nats_server_path=${GITHUB_WORKSPACE}/nats-server/main
+          printenv | sort
           chmod +x gradlew && ./gradlew clean test
       - name: Verify Javadoc
         run: ./gradlew javadoc
