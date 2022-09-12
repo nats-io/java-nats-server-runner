@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUILD_EVENT: ${{ github.event_name }}
-      nats_server_path: "$GITHUB_WORKSPACE/nats-server"
+      nats_server_path: ${{ env.GITHUB_WORKSPACE }}/nats-server
     steps:
       - name: Setup JDK 8
         uses: actions/setup-java@v2
