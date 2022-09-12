@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Build and Test
         run: |
-          set nats_server_path $GITHUB_WORKSPACE/nats-server/main
+          set nats_server_path=$GITHUB_WORKSPACE/nats-server/main
           chmod +x gradlew && ./gradlew clean test
       - name: Verify Javadoc
         run: ./gradlew javadoc
