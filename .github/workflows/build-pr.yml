@@ -24,23 +24,18 @@ jobs:
           cd $GITHUB_WORKSPACE
           git clone https://github.com/nats-io/nats-server.git
           cd nats-server
-          echo About To pwd
-          pwd
           go get
           go build main.go
+          mv main nats-server
           cd ..
-          $GITHUB_WORKSPACE/nats-server/main -v
+          export PATH=$PATH:$GITHUB_WORKSPACE/nats-server
+          nats-server -v
       - name: Check out code
         uses: actions/checkout@v2
       - name: Build and Test
         run: |
-          echo About To pwd
-          pwd
-          echo About To Export
-          export nats_server_path=${GITHUB_WORKSPACE}/nats-server/main
-          echo About To Echo
-          echo $nats_server_path
-          echo After Echo
+          export PATH=$PATH:$GITHUB_WORKSPACE/nats-server
+          nats-server -v
           chmod +x gradlew && ./gradlew clean test
       - name: Verify Javadoc
         run: ./gradlew javadoc
