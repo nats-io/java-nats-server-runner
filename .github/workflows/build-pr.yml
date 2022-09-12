@@ -24,6 +24,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           git clone https://github.com/nats-io/nats-server.git
           cd nats-server
+          pwd
           go get
           go build main.go
           cd ..
@@ -33,7 +34,7 @@ jobs:
       - name: Build and Test
         run: |
           export nats_server_path=${GITHUB_WORKSPACE}/nats-server/main
-          printenv | sort
+          echo $nats_server_path
           chmod +x gradlew && ./gradlew clean test
       - name: Verify Javadoc
         run: ./gradlew javadoc
