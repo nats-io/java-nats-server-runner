@@ -36,14 +36,15 @@ jobs:
           cd nats-server
           go get
           go build main.go
+          mkdir -p ~/.local/bin
+          cp main ~/.local/bin/nats-server
           cd ..
-          $GITHUB_WORKSPACE/nats-server/main -v
+          rm -rf nats-server
+          nats-server -v
       - name: Check out code
         uses: actions/checkout@v2
       - name: Build and Test
-        run: |
-          export nats_server_path=${GITHUB_WORKSPACE}/nats-server/main
-          chmod +x gradlew && ./gradlew clean test
+        run: chmod +x gradlew && ./gradlew clean test
       - name: Verify Javadoc
         run: ./gradlew javadoc
       - name: On Merge to Main, Verify and Publish Snapshot
