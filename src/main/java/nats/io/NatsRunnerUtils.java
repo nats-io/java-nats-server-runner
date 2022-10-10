@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.List;
 
 public class NatsRunnerUtils {
     public static final String NATS_SERVER_PATH_ENV = "nats_server_path";
@@ -115,5 +116,65 @@ public class NatsRunnerUtils {
         catch (Exception exp) {
             return null;
         }
+    }
+
+    public static List<ClusterInsert> createClusterInserts() throws IOException {
+        return createClusterInserts(3, "clstr", "srvr");
+    }
+
+    public static List<ClusterInsert> createClusterInserts(int count) throws IOException {
+        return createClusterInserts(count, "clstr", "srvr");
+    }
+
+    public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix) throws IOException {
+        List<ClusterInsert> clusterInserts = new ArrayList<>();
+        for (int x = 0; x < count; x++) {
+            ClusterInsert ci = new ClusterInsert();
+            ci.id = x + 1;
+            ci.port = nextPort();
+            ci.listen = nextPort();
+            clusterInserts.add(ci);
+        }
+        return finishCreateClusterInserts(clusterName, serverNamePrefix, clusterInserts);
+    }
+
+    public static List<ClusterInsert> createClusterInserts(int[] ports, int[] listens, String clusterName, String serverNamePrefix) throws IOException {
+        List<ClusterInsert> clusterInserts = new ArrayList<>();
+        for (int x = 0; x < ports.length; x++) {
+            ClusterInsert ci = new ClusterInsert();
+            ci.id = x + 1;
+            ci.port = ports[x];
+            ci.listen = listens[x];
+            clusterInserts.add(ci);
+        }
+        return finishCreateClusterInserts(clusterName, serverNamePrefix, clusterInserts);
+    }
+
+    private static List<ClusterInsert> finishCreateClusterInserts(String clusterName, String serverNamePrefix, List<ClusterInsert> clusterInserts) {
+        for (ClusterInsert ci : clusterInserts) {
+            List<String> lines = new ArrayList<>();
+            lines.add("server_name=" + serverNamePrefix + ci.id);
+            lines.add("cluster {");
+            lines.add("  name: " + clusterName);
+            lines.add("  listen: 127.0.0.1:" + ci.listen);
+            lines.add("  routes: [");
+            for (ClusterInsert ciRoutes : clusterInserts) {
+                if (ciRoutes.id != ci.id) {
+                    lines.add("    nats-route://127.0.0.1:" + ciRoutes.listen);
+                }
+            }
+            lines.add("  ]");
+            lines.add("}");
+            ci.setInsert(lines);
+        }
+        return clusterInserts;
+    }
+
+    public static void main(String[] args) throws IOException {
+        List<ClusterInsert> clusterInserts = createClusterInserts(4);
+        System.out.println(clusterInserts.get(0));
+        System.out.println(clusterInserts.get(1));
+        System.out.println(clusterInserts.get(2));
+        System.out.println(clusterInserts.get(3));
     }
 }
