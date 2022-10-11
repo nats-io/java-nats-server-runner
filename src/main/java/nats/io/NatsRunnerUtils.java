@@ -46,7 +46,7 @@ public class NatsRunnerUtils {
 
     /**
      * Set the path for the
-     * @param serverPath
+     * @param serverPath the fully qualified path of the server
      */
     public static void setServerPath(String serverPath) {
         SERVER_PATH = serverPath;
@@ -168,13 +168,5 @@ public class NatsRunnerUtils {
             ci.setInsert(lines);
         }
         return clusterInserts;
-    }
-
-    public static void main(String[] args) throws IOException {
-        List<ClusterInsert> clusterInserts = createClusterInserts(4);
-        System.out.println(clusterInserts.get(0));
-        System.out.println(clusterInserts.get(1));
-        System.out.println(clusterInserts.get(2));
-        System.out.println(clusterInserts.get(3));
     }
 }

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
-class NatsServerRunnerTest extends TestBase {
+public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testWithoutConfigDefault() throws IOException, InterruptedException {

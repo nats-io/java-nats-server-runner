@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.platform.commons.util.CollectionUtils.toUnmodifiableList;
 
-class TestBase {
+public class TestBase {
 
     protected static final String SOURCE_CONFIG_FILE_PATH = "src/test/resources/";
     
