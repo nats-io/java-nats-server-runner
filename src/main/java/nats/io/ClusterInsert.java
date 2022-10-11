@@ -14,7 +14,7 @@ package nats.io;
 
 import java.util.List;
 
-class ClusterInsert {
+public class ClusterInsert {
     public int id;
     public int port;
     public int listen;

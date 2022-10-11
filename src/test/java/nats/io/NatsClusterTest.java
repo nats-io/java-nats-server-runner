@@ -19,7 +19,7 @@ import java.util.List;
 
 import static nats.io.NatsRunnerUtils.createClusterInserts;
 
-class NatsClusterTest extends TestBase {
+public class NatsClusterTest extends TestBase {
 
     @Test
     public void testCreateCluster() throws IOException, InterruptedException {
