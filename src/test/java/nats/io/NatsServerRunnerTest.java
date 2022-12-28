@@ -19,6 +19,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.logging.Level;
 import java.util.stream.Stream;
 
 public class NatsServerRunnerTest extends TestBase {
@@ -85,6 +86,16 @@ public class NatsServerRunnerTest extends TestBase {
             if (checkConnect) {
                 connect(runner);
             }
+        }
+    }
+
+    // THIS TEST IS RUN MANUALLY. THERE SHOULD BE NO SERVER OUTPUT
+    // COMMENT OUT the setLoggingLevel to see the output appear.
+    @Test
+    public void testLoggingLevel() throws IOException, InterruptedException {
+        NatsServerRunner.setLoggingLevel(Level.SEVERE);
+        try (NatsServerRunner runner = new NatsServerRunner()) {
+            connect(runner);
         }
     }
 }

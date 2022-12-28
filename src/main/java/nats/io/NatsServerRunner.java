@@ -19,6 +19,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,7 +28,19 @@ import static nats.io.NatsRunnerUtils.*;
 
 public class NatsServerRunner implements AutoCloseable {
 
-    private static final Logger LOGGER = Logger.getLogger(NatsServerRunner.class.getName());
+    private static Logger LOGGER;
+
+    static {
+        LOGGER = Logger.getLogger(NatsServerRunner.class.getName());
+    }
+
+    public static void setLogger(Logger logger) {
+        LOGGER = logger;
+    }
+
+    public static void setLoggingLevel(Level loggingLevel) {
+        LOGGER.setLevel(loggingLevel);
+    }
 
     private final int _port;
     private final File configFile;
@@ -254,7 +267,6 @@ public class NatsServerRunner implements AutoCloseable {
     public NatsServerRunner(String[] customArgs, int port, boolean debug) throws IOException {
         this(port, debug, false, null, null, customArgs);
     }
-
 
     /**
      * Construct and start the Nats Server runner with options
