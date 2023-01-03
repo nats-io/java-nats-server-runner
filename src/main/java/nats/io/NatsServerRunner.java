@@ -13,6 +13,7 @@
 package nats.io;
 
 import java.io.*;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
@@ -340,11 +341,7 @@ public class NatsServerRunner implements AutoCloseable {
             int tries = 10;
             // wait at least 1x and maybe 10
             do {
-                try {
-                    Thread.sleep(100);
-                } catch (Exception exp) {
-                    //Give the server time to get going
-                }
+                waitFor100ms();
                 tries--;
             } while (!process.isAlive() && tries > 0);
 
@@ -352,14 +349,20 @@ public class NatsServerRunner implements AutoCloseable {
             SocketChannel socketChannel = SocketChannel.open();
             socketChannel.configureBlocking(true);
             boolean scanning = true;
-            while (scanning) {
+            tries = 3;
+            do {
+                waitFor100ms();
                 try {
                     socketChannel.connect(addr);
+                    scanning = false;
+                } catch (ConnectException e) {
+                    if (--tries == 0) {
+                        throw e;
+                    }
                 } finally {
                     socketChannel.close();
                 }
-                scanning = false;
-            }
+            } while (scanning);
 
             LOGGER.info("%%% Started [" + cmdLine + "]");
         } catch (IOException ex) {
@@ -369,6 +372,14 @@ public class NatsServerRunner implements AutoCloseable {
             LOGGER.info("%%% See https://github.com/nats-io/nats-server for information on installation");
 
             throw new IllegalStateException("Failed to run [" + cmdLine + "]", ex);
+        }
+    }
+
+    private static void waitFor100ms() {
+        try {
+            Thread.sleep(100);
+        } catch (Exception ignored) {
+            // Can be ignored
         }
     }
 
