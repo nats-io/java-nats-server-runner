@@ -368,7 +368,7 @@ public class NatsServerRunner implements AutoCloseable {
             LOGGER.info("%%% Make sure that the nats-server is installed and in your PATH.");
             LOGGER.info("%%% See https://github.com/nats-io/nats-server for information on installation");
 
-            throw new IllegalStateException("Failed to run [" + cmdLine + "]");
+            throw new IllegalStateException("Failed to run [" + cmdLine + "]", ex);
         }
     }
 
