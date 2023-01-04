@@ -39,9 +39,30 @@ public class NatsRunnerUtils {
      * Build a standard nats://localhost:port uri
      * @param port the port
      * @return the uri
+     * @deprecated Use {@link #getNatsLocalhostUri(int)} instead.
      */
+    @Deprecated
     public static String getURIForPort(int port) {
-        return "nats://localhost:" + port;
+        return getLocalhostUri("nats", port);
+    }
+
+    /**
+     * Build a nats://localhost:port uri
+     * @param port the port
+     * @return the uri
+     */
+    public static String getNatsLocalhostUri(int port) {
+        return getLocalhostUri("nats", port);
+    }
+
+    /**
+     * Build a schema://localhost:port uri
+     * @param schema the schema
+     * @param port the port
+     * @return the uri
+     */
+    public static String getLocalhostUri(String schema, int port) {
+        return schema + "://localhost:" + port;
     }
 
     /**
