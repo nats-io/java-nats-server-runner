@@ -434,7 +434,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @return the uri string
      */
     public String getURI() {
-        return getURIForPort(_port);
+        return getNatsLocalhostUri(_port);
     }
 
     /**
