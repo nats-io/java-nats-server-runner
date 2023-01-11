@@ -351,7 +351,6 @@ public class NatsServerRunner implements AutoCloseable {
             boolean scanning = true;
             tries = 3;
             do {
-                waitFor100ms();
                 try {
                     socketChannel.connect(addr);
                     scanning = false;
@@ -359,6 +358,7 @@ public class NatsServerRunner implements AutoCloseable {
                     if (--tries == 0) {
                         throw e;
                     }
+                    waitFor100ms();
                 } finally {
                     socketChannel.close();
                 }
