@@ -67,7 +67,7 @@ public class NatsRunnerUtils {
 
     /**
      * Set the path for the server. Will be used if {@value #NATS_SERVER_PATH_ENV} environment variable is not set.
-     * @deprecated Use {@link Builder} instead
+     * @deprecated Use {@link NatsServerRunner.Builder} instead
      * @param serverPath the fully qualified path of the server
      */
     @Deprecated
@@ -78,7 +78,7 @@ public class NatsRunnerUtils {
     /**
      * Clear the path for the server. Will use {@value #DEFAULT_NATS_SERVER}
      * if {@value #NATS_SERVER_PATH_ENV} environment variable is not set.
-     * @deprecated Use {@link Builder} instead
+     * @deprecated Use {@link NatsServerRunner.Builder} instead
      */
     @Deprecated
     public static void clearServerPath() {
