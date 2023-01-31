@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
-import static nats.io.NatsRunnerUtils.DEBUG_OPTION;
 import static nats.io.NatsRunnerUtils.JETSTREAM_OPTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,8 +34,15 @@ public class TestBase {
     
     protected static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"9.99.9\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
 
+    protected void validateBasics(NatsServerRunner runner, boolean debug, boolean jetStream) throws IOException {
+        validateCommandLine(runner, debug, jetStream);
+        validateHostAndPort(runner);
+        validateConfigLines(runner);
+        connect(runner);
+    }
+
     protected void validateCommandLine(NatsServerRunner runner, boolean debug, boolean jetStream, String... customArgs) {
-        assertEquals(debug, runner.getCmdLine().contains(" " + DEBUG_OPTION));
+        assertEquals(debug, runner.getCmdLine().contains(" " + DebugLevel.DEBUG_TRACE.getCmdOption()));
         assertEquals(jetStream, runner.getCmdLine().contains(" " + JETSTREAM_OPTION));
         for (String ca : customArgs) {
             assertTrue(runner.getCmdLine().contains(" " + ca));

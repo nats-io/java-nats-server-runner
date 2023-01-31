@@ -11,15 +11,31 @@ Run the [NATS messaging system](https://nats.io) Server from your Java code.
 
 Useful for running unit or integration tests on the localhost.
 
-By default, the server must be in your path under the name `nats-server`
-or you must set the `nats_server_path` environment variable.
+By default, the server is found in your path in this order: 
+- the `executablePath` set in the builder 
+- the path found in the `nats_server_path` environment variable
+- the default executable expected in the environment path, `nats-server`
 
+For simple setup, constructors work well 
 ```java
 try (NatsServerRunner server = new NatsServerRunner()) {
     System.out.println("Server running on port: " + server.getPort())
-
     Connection c = Nats.connect(server.getURI());
-    
+    ...
+    }
+```
+
+For more complicated setup, use the `NatsServerRunnerBuilder`
+```java
+try (NatsServerRunner server = NatsServerRunner.builder()
+    .port(4567)
+    .debugLevel(DebugLevel.DEBUG)
+    .jetstream(true)
+    .configFilePath("/custom/nats-server")
+    .build())
+{
+    System.out.println("Server running on port: " + server.getPort())
+    Connection c = Nats.connect(server.getURI());
     ...
 }
 ```

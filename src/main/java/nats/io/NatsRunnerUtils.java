@@ -1,4 +1,4 @@
-// Copyright 2020 The NATS Authors
+// Copyright 2020-2023 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at:
@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package nats.io;
 
 import java.io.BufferedReader;
@@ -25,7 +26,6 @@ public class NatsRunnerUtils {
 
     public static final String CONFIG_FILE_OPTION_NAME = "--config";
     public static final String VERSION_OPTION = "--version";
-    public static final String DEBUG_OPTION = "-DV";
     public static final String JETSTREAM_OPTION = "-js";
 
     public static final String CONF_FILE_PREFIX = "nats_java_test";
@@ -66,17 +66,34 @@ public class NatsRunnerUtils {
     }
 
     /**
-     * Set the path for the
+     * Set the path for the server. Will be used if {@value #NATS_SERVER_PATH_ENV} environment variable is not set.
+     * @deprecated Use {@link Builder} instead
      * @param serverPath the fully qualified path of the server
      */
+    @Deprecated
     public static void setServerPath(String serverPath) {
         SERVER_PATH = serverPath;
     }
 
+    /**
+     * Clear the path for the server. Will use {@value #DEFAULT_NATS_SERVER}
+     * if {@value #NATS_SERVER_PATH_ENV} environment variable is not set.
+     * @deprecated Use {@link Builder} instead
+     */
+    @Deprecated
     public static void clearServerPath() {
         SERVER_PATH = null;
     }
 
+    /**
+     * Resolves the server executable path in this order:
+     * <ol>
+     * <li>Checking the {@value #NATS_SERVER_PATH_ENV} environment variable</li>
+     * <li>Checking the value set via {#setServerPath} method</li>
+     * <li>{@value #DEFAULT_NATS_SERVER}</li>
+     * </ol>
+     * @return the resolved path
+     */
     public static String getResolvedServerPath() {
         String serverPath = System.getenv(NATS_SERVER_PATH_ENV);
         if (serverPath == null) {
