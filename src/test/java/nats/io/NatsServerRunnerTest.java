@@ -27,10 +27,14 @@ public class NatsServerRunnerTest extends TestBase {
     @Test
     public void testWithoutConfigDefault() throws IOException, InterruptedException {
         try (NatsServerRunner runner = new NatsServerRunner()) {
-            validateCommandLine(runner, false, false);
-            validateHostAndPort(runner);
-            validateConfigLines(runner);
-            connect(runner);
+            validateBasics(runner, false, false);
+        }
+    }
+
+    @Test
+    public void testWithoutConfigDefaultBuilder() throws IOException, InterruptedException {
+        try (NatsServerRunner runner = NatsServerRunner.builder().build()) {
+            validateBasics(runner, false, false);
         }
     }
 
@@ -47,22 +51,47 @@ public class NatsServerRunnerTest extends TestBase {
     @MethodSource("withoutDebugAndJetStreamArgs")
     public void testWithoutDebugAndJetStream(boolean debug, boolean jetStream) throws IOException, InterruptedException {
         try (NatsServerRunner runner = new NatsServerRunner(debug, jetStream)) {
-            validateCommandLine(runner, debug, jetStream);
-            validateHostAndPort(runner);
-            validateConfigLines(runner);
-            connect(runner);
+            validateBasics(runner, debug, jetStream);
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("withoutDebugAndJetStreamArgs")
+    public void testWithoutDebugAndJetStreamBuilder(boolean debug, boolean jetStream) throws IOException, InterruptedException {
+        try (NatsServerRunner runner = NatsServerRunner.builder()
+            .debug(debug)
+            .jetstream(jetStream)
+            .build())
+        {
+            validateBasics(runner, debug, jetStream);
+        }
+    }
+
+    private static final String[] CUSTOMS_CONFIG_INSERTS = { "# custom insert this comment" };
+    private static final String[] CUSTOMS_ARGS = { "--user", "uuu", "--pass", "ppp" };
+
+    private void _testCustoms(NatsServerRunner runner) throws IOException {
+        validateCommandLine(runner, false, false, "--user uuu", "--pass ppp");
+        validateHostAndPort(runner);
+        validateConfigLines(runner, Arrays.asList(CUSTOMS_CONFIG_INSERTS));
+        connect(runner);
     }
 
     @Test
     public void testCustoms() throws IOException, InterruptedException {
-        String[] configInserts = { "# custom insert this comment" };
-        String[] customArgs = { "--user", "uuu", "--pass", "ppp" };
-        try (NatsServerRunner runner = new NatsServerRunner(-1, false, false, null, configInserts, customArgs)) {
-            validateCommandLine(runner, false, false, "--user uuu", "--pass ppp");
-            validateHostAndPort(runner);
-            validateConfigLines(runner, Arrays.asList(configInserts));
-            connect(runner);
+        try (NatsServerRunner runner = new NatsServerRunner(-1, false, false, null, CUSTOMS_CONFIG_INSERTS, CUSTOMS_ARGS)) {
+            _testCustoms(runner);
+        }
+    }
+
+    @Test
+    public void testCustomsBuilder() throws IOException, InterruptedException {
+        try (NatsServerRunner runner = NatsServerRunner.builder()
+            .configInserts(CUSTOMS_CONFIG_INSERTS)
+            .customArgs(CUSTOMS_ARGS)
+            .build())
+        {
+            _testCustoms(runner);
         }
     }
 
@@ -75,26 +104,44 @@ public class NatsServerRunnerTest extends TestBase {
         );
     }
 
+    private void _testWithConfig(String configFile, boolean checkConnect, String[] configInserts, NatsServerRunner runner) throws IOException {
+        validateCommandLine(runner, false, false);
+        validateHostAndPort(runner);
+        validateConfigLines(runner, configFile, configInserts);
+        if (checkConnect) {
+            connect(runner);
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("withConfigArgs")
     public void testWithConfig(String configFile, boolean checkConnect) throws IOException, InterruptedException {
         String[] configInserts = { "# custom insert this comment " + configFile };
         try (NatsServerRunner runner = new NatsServerRunner(SOURCE_CONFIG_FILE_PATH + configFile, configInserts, -1, false)) {
-            validateCommandLine(runner, false, false);
-            validateHostAndPort(runner);
-            validateConfigLines(runner, configFile, configInserts);
-            if (checkConnect) {
-                connect(runner);
-            }
+            _testWithConfig(configFile, checkConnect, configInserts, runner);
         }
     }
 
-    // THIS TEST IS RUN MANUALLY. THERE SHOULD BE NO SERVER OUTPUT
-    // COMMENT OUT the setLoggingLevel to see the output appear.
+    @ParameterizedTest
+    @MethodSource("withConfigArgs")
+    public void testWithConfigBuilder(String configFile, boolean checkConnect) throws IOException, InterruptedException {
+        String[] configInserts = { "# custom insert this comment " + configFile };
+        try (NatsServerRunner runner = NatsServerRunner.builder()
+            .configFilePath(SOURCE_CONFIG_FILE_PATH + configFile)
+            .configInserts(configInserts)
+            .build())
+        {
+            _testWithConfig(configFile, checkConnect, configInserts, runner);
+        }
+    }
+
+    // RUN THIS TEST MANUALLY TO SEE THAT THERE IS NO SERVER OUTPUT TO THE CONSOLE
+    // COMMENT OUT THE .displayOutLevel(Level.SEVERE) TO SEE THE OUTPUT APPEAR.
     @Test
-    public void testLoggingLevel() throws IOException, InterruptedException {
-        NatsServerRunner.setLoggingLevel(Level.SEVERE);
-        try (NatsServerRunner runner = new NatsServerRunner()) {
+    public void testDisplayOutLevel() throws IOException, InterruptedException {
+        try (NatsServerRunner runner = NatsServerRunner.builder()
+            .displayOutLevel(Level.SEVERE)
+            .build()) {
             connect(runner);
         }
     }
