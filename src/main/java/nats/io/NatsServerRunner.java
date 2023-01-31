@@ -39,6 +39,12 @@ public class NatsServerRunner implements AutoCloseable {
     public static long DEFAULT_RUN_CHECK_WAIT = 100;
     public static int DEFAULT_RUN_CHECK_TRIES = 3;
 
+    private static Level DefaultDisplayLevel = Level.ALL;
+
+    public static void setDefaultDisplayLevel(Level defaultDisplayLevel) {
+        DefaultDisplayLevel = defaultDisplayLevel;
+    }
+
     private final String _executablePath;
     private final Logger _displayOut;
     private final int _port;
@@ -307,7 +313,10 @@ public class NatsServerRunner implements AutoCloseable {
         _port = b.port == null || b.port <= 0 ? nextPort() : b.port;
 
         _displayOut = b.displayOut == null ? Logger.getLogger(NatsServerRunner.class.getName()) : b.displayOut;
-        if (b.displayOutLevel != null) {
+        if (b.displayOutLevel == null) {
+            _displayOut.setLevel(DefaultDisplayLevel);
+        }
+        else {
             _displayOut.setLevel(b.displayOutLevel);
         }
 

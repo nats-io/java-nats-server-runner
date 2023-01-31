@@ -19,7 +19,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.logging.Level;
 import java.util.stream.Stream;
 
 public class NatsServerRunnerTest extends TestBase {
@@ -132,17 +131,6 @@ public class NatsServerRunnerTest extends TestBase {
             .build())
         {
             _testWithConfig(configFile, checkConnect, configInserts, runner);
-        }
-    }
-
-    // RUN THIS TEST MANUALLY TO SEE THAT THERE IS NO SERVER OUTPUT TO THE CONSOLE
-    // COMMENT OUT THE .displayOutLevel(Level.SEVERE) TO SEE THE OUTPUT APPEAR.
-    @Test
-    public void testDisplayOutLevel() throws IOException, InterruptedException {
-        try (NatsServerRunner runner = NatsServerRunner.builder()
-            .displayOutLevel(Level.SEVERE)
-            .build()) {
-            connect(runner);
         }
     }
 }
