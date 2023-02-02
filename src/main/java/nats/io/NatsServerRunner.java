@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -39,19 +40,12 @@ public class NatsServerRunner implements AutoCloseable {
     public static long DEFAULT_RUN_CHECK_WAIT = 100;
     public static int DEFAULT_RUN_CHECK_TRIES = 3;
 
-    private static Level DefaultDisplayLevel = Level.ALL;
-
-    public static void setDefaultDisplayLevel(Level defaultDisplayLevel) {
-        DefaultDisplayLevel = defaultDisplayLevel;
-    }
-
     private final String _executablePath;
-    private final Logger _displayOut;
+    private final Output _displayOut;
     private final int _port;
     private final File _configFile;
     private final String _cmdLine;
-
-    private Process _process;
+    private Process process;
 
     /**
      * Get a new Builder
@@ -109,7 +103,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(boolean debug, boolean jetstream) throws IOException {
-        this(builder().debug(debug).jetstream(jetstream));
+        this(builder().debug(debug).jetStream(jetstream));
     }
 
     /**
@@ -143,7 +137,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(int port, boolean debug, boolean jetstream) throws IOException {
-        this(builder().port(port).debug(debug).jetstream(jetstream));
+        this(builder().port(port).debug(debug).jetStream(jetstream));
     }
 
     /**
@@ -179,7 +173,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(String configFilePath, boolean debug, boolean jetstream) throws IOException {
-        this(builder().debug(debug).jetstream(jetstream).configFilePath(configFilePath));
+        this(builder().debug(debug).jetStream(jetstream).configFilePath(configFilePath));
     }
 
     /**
@@ -269,7 +263,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(String[] customArgs, boolean debug, boolean jetstream) throws IOException {
-        this(builder().debug(debug).jetstream(jetstream).customArgs(customArgs));
+        this(builder().debug(debug).jetStream(jetstream).customArgs(customArgs));
     }
 
     /**
@@ -302,23 +296,22 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(int port, boolean debug, boolean jetstream, String configFilePath, String[] configInserts, String[] customArgs) throws IOException {
-        this(builder().port(port).debug(debug).jetstream(jetstream).configFilePath(configFilePath).configInserts(configInserts).customArgs(customArgs));
+        this(builder().port(port).debug(debug).jetStream(jetstream).configFilePath(configFilePath).configInserts(configInserts).customArgs(customArgs));
+    }
+
+    public NatsServerRunner(NatsServerRunnerOptions natsServerRunnerOptions) throws Exception {
+        this(builder().runnerOptions(natsServerRunnerOptions));
     }
 
     // ----------------------------------------------------------------------------------------------------
     // ACTUAL CONSTRUCTION
     // ----------------------------------------------------------------------------------------------------
-    NatsServerRunner(Builder b) throws IOException {
+    protected NatsServerRunner(Builder b) throws IOException {
         _executablePath = b.executablePath == null ? getResolvedServerPath() : b.executablePath.toString();
         _port = b.port == null || b.port <= 0 ? nextPort() : b.port;
 
-        _displayOut = b.displayOut == null ? Logger.getLogger(NatsServerRunner.class.getName()) : b.displayOut;
-        if (b.displayOutLevel == null) {
-            _displayOut.setLevel(DefaultDisplayLevel);
-        }
-        else {
-            _displayOut.setLevel(b.displayOutLevel);
-        }
+        _displayOut = b.output == null ? DefaultOutputSupplier.get() : b.output;
+        _displayOut.setLevel(b.outputLevel == null ? DefaultOutputLevel : b.outputLevel);
 
         long procCheckWait = b.processCheckWait == null ? DEFAULT_PROCESS_CHECK_WAIT : b.processCheckWait;
         int procCheckTries = b.processCheckTries == null ? DEFAULT_PROCESS_CHECK_TRIES : b.processCheckTries;
@@ -348,7 +341,7 @@ public class NatsServerRunner implements AutoCloseable {
             cmd.add(_configFile.getAbsolutePath());
         }
         catch (IOException ioe) {
-            _displayOut.severe("%%% Error creating config file: " + ioe);
+            _displayOut.error("%%% Error creating config file: " + ioe);
             throw ioe;
         }
 
@@ -375,15 +368,15 @@ public class NatsServerRunner implements AutoCloseable {
             pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
             _displayOut.info("%%% Starting [" + _cmdLine + "] with redirected IO");
 
-            _process = pb.start();
+            process = pb.start();
 
-            NatsOutputLogger.logOutput(_displayOut, _process, DEFAULT_NATS_SERVER, _port);
+            NatsOutputLogger.logOutput(_displayOut, process, DEFAULT_NATS_SERVER);
 
             int tries = procCheckTries;
             do {
                 sleep(procCheckWait);
             }
-            while (!_process.isAlive() && --tries > 0);
+            while (!process.isAlive() && --tries > 0);
 
             SocketAddress addr = new InetSocketAddress("localhost", _port);
             SocketChannel socketChannel = SocketChannel.open();
@@ -516,13 +509,13 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws InterruptedException if the wait was interrupted
      */
     public void shutdown(boolean wait) throws InterruptedException {
-        if (_process != null) {
-            _process.destroy();
+        if (process != null) {
+            process.destroy();
             _displayOut.info("%%% Shut down [" + _cmdLine + "]");
             if (wait) {
-                _process.waitFor();
+                process.waitFor();
             }
-            _process = null;
+            process = null;
         }
     }
 
@@ -553,8 +546,8 @@ public class NatsServerRunner implements AutoCloseable {
         List<String> configInserts;
         List<String> customArgs;
         Path executablePath;
-        Logger displayOut;
-        Level displayOutLevel;
+        Output output;
+        Level outputLevel;
         Long processCheckWait;
         Integer processCheckTries;
         Long connectCheckWait;
@@ -575,7 +568,12 @@ public class NatsServerRunner implements AutoCloseable {
             return this;
         }
 
-        public Builder jetstream(boolean jetStream) {
+        public Builder jetStream() {
+            this.jetstream = true;
+            return this;
+        }
+
+        public Builder jetStream(boolean jetStream) {
             this.jetstream = jetStream;
             return this;
         }
@@ -620,13 +618,18 @@ public class NatsServerRunner implements AutoCloseable {
             return this;
         }
 
-        public Builder displayOut(Logger displayOut) {
-            this.displayOut = displayOut;
+        public Builder output(Output output) {
+            this.output = output;
             return this;
         }
 
-        public Builder displayOutLevel(Level displayOutLevel) {
-            this.displayOutLevel = displayOutLevel;
+        public Builder outputLogger(Logger logger) {
+            this.output = logger == null ? null : new LoggingOutput(logger);
+            return this;
+        }
+
+        public Builder outputLevel(Level level) {
+            this.outputLevel = level;
             return this;
         }
 
@@ -653,5 +656,40 @@ public class NatsServerRunner implements AutoCloseable {
         public NatsServerRunner build() throws IOException {
             return new NatsServerRunner(this);
         }
+
+        public Builder runnerOptions(NatsServerRunnerOptions nsro) {
+            port(nsro.port())
+                .debugLevel(nsro.debugLevel())
+                .jetStream(nsro.jetStream())
+                .configFilePath(nsro.configFilePath())
+                .configInserts(nsro.configInserts())
+                .customArgs(nsro.customArgs())
+                .executablePath(nsro.executablePath())
+                .outputLogger(nsro.logger())
+                .outputLevel(nsro.logLevel());
+            return this;
+        }
+    }
+
+    // ====================================================================================================
+    // Output
+    // ====================================================================================================
+    private static Supplier<Output> DefaultOutputSupplier = defaultLoggingSupplier();
+    private static Level DefaultOutputLevel = Level.INFO;
+
+    public static void setDefaultOutputSupplier(Supplier<Output> outputSupplier) {
+        DefaultOutputSupplier = outputSupplier == null ? defaultLoggingSupplier() : outputSupplier;
+    }
+
+    private static Supplier<Output> defaultLoggingSupplier() {
+        return () -> new LoggingOutput(Logger.getLogger(NatsServerRunner.class.getName()));
+    }
+
+    public static void setDefaultOutputLevel(Level defaultOutputLevel) {
+        DefaultOutputLevel = defaultOutputLevel;
+    }
+
+    public static Level getDefaultLoggingLevel() {
+        return DefaultOutputLevel;
     }
 }

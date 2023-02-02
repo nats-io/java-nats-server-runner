@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -34,18 +33,16 @@ import java.util.logging.Logger;
  * code.
  */
 final class NatsOutputLogger implements Runnable {
-    private final Logger logger;
+    private final Output output;
     private final BufferedReader reader;
-    private final int port;
 
-    private NatsOutputLogger(final Logger logger, final Process process, final int port) {
-        this.logger = logger;
-        this.port = port;
+    private NatsOutputLogger(Output output, Process process) {
+        this.output = output;
         this.reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
     }
 
     private void logLine(String line) {
-        logger.logp(Level.INFO, Thread.currentThread().getName(), String.valueOf(port), line);
+        output.info(() -> line);
     }
 
     @Override
@@ -54,20 +51,20 @@ final class NatsOutputLogger implements Runnable {
             try {
                 reader.lines().forEach(this::logLine);
             } catch (final UncheckedIOException e) {
-                logger.warning("while reading output " + e);
+                output.warning(() -> "while reading output " + e);
             }
         } finally {
             try {
                 reader.close();
             } catch (final IOException e) {
-                logger.warning("caught i/o exception closing reader" + e);
+                output.warning(() -> "caught i/o exception closing reader" + e);
             }
         }
     }
 
-    static void logOutput(final Logger logger, final Process process, final String processName, int port) {
+    static void logOutput(final Output output, final Process process, final String processName) {
         final String threadName = (isNotBlank(processName) ? processName : "unknown") + ":" + processId(process);
-        final Thread t = new Thread(new NatsOutputLogger(logger, process, port));
+        final Thread t = new Thread(new NatsOutputLogger(output, process));
         t.setName(threadName);
         t.setDaemon(true);
         t.start();
