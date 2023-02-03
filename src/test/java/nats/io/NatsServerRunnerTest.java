@@ -24,14 +24,14 @@ import java.util.stream.Stream;
 public class NatsServerRunnerTest extends TestBase {
 
     @Test
-    public void testWithoutConfigDefault() throws IOException, InterruptedException {
+    public void testWithoutConfigDefault() throws Exception {
         try (NatsServerRunner runner = new NatsServerRunner()) {
             validateBasics(runner, false, false);
         }
     }
 
     @Test
-    public void testWithoutConfigDefaultBuilder() throws IOException, InterruptedException {
+    public void testWithoutConfigDefaultBuilder() throws Exception {
         try (NatsServerRunner runner = NatsServerRunner.builder().build()) {
             validateBasics(runner, false, false);
         }
@@ -48,7 +48,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @ParameterizedTest
     @MethodSource("withoutDebugAndJetStreamArgs")
-    public void testWithoutDebugAndJetStream(boolean debug, boolean jetStream) throws IOException, InterruptedException {
+    public void testWithoutDebugAndJetStream(boolean debug, boolean jetStream) throws Exception {
         try (NatsServerRunner runner = new NatsServerRunner(debug, jetStream)) {
             validateBasics(runner, debug, jetStream);
         }
@@ -56,7 +56,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @ParameterizedTest
     @MethodSource("withoutDebugAndJetStreamArgs")
-    public void testWithoutDebugAndJetStreamBuilder(boolean debug, boolean jetStream) throws IOException, InterruptedException {
+    public void testWithoutDebugAndJetStreamBuilder(boolean debug, boolean jetStream) throws Exception {
         try (NatsServerRunner runner = NatsServerRunner.builder()
             .debug(debug)
             .jetstream(jetStream)
@@ -77,14 +77,14 @@ public class NatsServerRunnerTest extends TestBase {
     }
 
     @Test
-    public void testCustoms() throws IOException, InterruptedException {
+    public void testCustoms() throws Exception {
         try (NatsServerRunner runner = new NatsServerRunner(-1, false, false, null, CUSTOMS_CONFIG_INSERTS, CUSTOMS_ARGS)) {
             _testCustoms(runner);
         }
     }
 
     @Test
-    public void testCustomsBuilder() throws IOException, InterruptedException {
+    public void testCustomsBuilder() throws Exception {
         try (NatsServerRunner runner = NatsServerRunner.builder()
             .configInserts(CUSTOMS_CONFIG_INSERTS)
             .customArgs(CUSTOMS_ARGS)
@@ -114,7 +114,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @ParameterizedTest
     @MethodSource("withConfigArgs")
-    public void testWithConfig(String configFile, boolean checkConnect) throws IOException, InterruptedException {
+    public void testWithConfig(String configFile, boolean checkConnect) throws Exception {
         String[] configInserts = { "# custom insert this comment " + configFile };
         try (NatsServerRunner runner = new NatsServerRunner(SOURCE_CONFIG_FILE_PATH + configFile, configInserts, -1, false)) {
             _testWithConfig(configFile, checkConnect, configInserts, runner);
@@ -123,7 +123,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @ParameterizedTest
     @MethodSource("withConfigArgs")
-    public void testWithConfigBuilder(String configFile, boolean checkConnect) throws IOException, InterruptedException {
+    public void testWithConfigBuilder(String configFile, boolean checkConnect) throws Exception {
         String[] configInserts = { "# custom insert this comment " + configFile };
         try (NatsServerRunner runner = NatsServerRunner.builder()
             .configFilePath(SOURCE_CONFIG_FILE_PATH + configFile)

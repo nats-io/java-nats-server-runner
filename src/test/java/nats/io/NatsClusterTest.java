@@ -14,7 +14,6 @@ package nats.io;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.List;
 
 import static nats.io.NatsRunnerUtils.createClusterInserts;
@@ -22,7 +21,7 @@ import static nats.io.NatsRunnerUtils.createClusterInserts;
 public class NatsClusterTest extends TestBase {
 
     @Test
-    public void testCreateCluster() throws IOException, InterruptedException {
+    public void testCreateCluster() throws Exception {
         List<ClusterInsert> clusterInserts = createClusterInserts();
         ClusterInsert ci1 = clusterInserts.get(0);
         ClusterInsert ci2 = clusterInserts.get(1);
