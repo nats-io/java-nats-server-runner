@@ -103,7 +103,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(boolean debug, boolean jetstream) throws IOException {
-        this(builder().debug(debug).jetStream(jetstream));
+        this(builder().debug(debug).jetstream(jetstream));
     }
 
     /**
@@ -137,7 +137,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(int port, boolean debug, boolean jetstream) throws IOException {
-        this(builder().port(port).debug(debug).jetStream(jetstream));
+        this(builder().port(port).debug(debug).jetstream(jetstream));
     }
 
     /**
@@ -173,7 +173,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(String configFilePath, boolean debug, boolean jetstream) throws IOException {
-        this(builder().debug(debug).jetStream(jetstream).configFilePath(configFilePath));
+        this(builder().debug(debug).jetstream(jetstream).configFilePath(configFilePath));
     }
 
     /**
@@ -263,7 +263,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(String[] customArgs, boolean debug, boolean jetstream) throws IOException {
-        this(builder().debug(debug).jetStream(jetstream).customArgs(customArgs));
+        this(builder().debug(debug).jetstream(jetstream).customArgs(customArgs));
     }
 
     /**
@@ -296,7 +296,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @throws IOException thrown when the server cannot start
      */
     public NatsServerRunner(int port, boolean debug, boolean jetstream, String configFilePath, String[] configInserts, String[] customArgs) throws IOException {
-        this(builder().port(port).debug(debug).jetStream(jetstream).configFilePath(configFilePath).configInserts(configInserts).customArgs(customArgs));
+        this(builder().port(port).debug(debug).jetstream(jetstream).configFilePath(configFilePath).configInserts(configInserts).customArgs(customArgs));
     }
 
     public NatsServerRunner(NatsServerRunnerOptions natsServerRunnerOptions) throws Exception {
@@ -531,7 +531,7 @@ public class NatsServerRunner implements AutoCloseable {
      * For AutoCloseable, calls shutdown(true).
      */
     @Override
-    public void close() throws InterruptedException {
+    public void close() throws Exception {
         shutdown(true);
     }
 
@@ -568,12 +568,12 @@ public class NatsServerRunner implements AutoCloseable {
             return this;
         }
 
-        public Builder jetStream() {
+        public Builder jetstream() {
             this.jetstream = true;
             return this;
         }
 
-        public Builder jetStream(boolean jetStream) {
+        public Builder jetstream(boolean jetStream) {
             this.jetstream = jetStream;
             return this;
         }
@@ -660,7 +660,7 @@ public class NatsServerRunner implements AutoCloseable {
         public Builder runnerOptions(NatsServerRunnerOptions nsro) {
             port(nsro.port())
                 .debugLevel(nsro.debugLevel())
-                .jetStream(nsro.jetStream())
+                .jetstream(nsro.jetStream())
                 .configFilePath(nsro.configFilePath())
                 .configInserts(nsro.configInserts())
                 .customArgs(nsro.customArgs())

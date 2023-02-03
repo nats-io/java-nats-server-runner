@@ -1,9 +1,6 @@
 name: GitHub Merge Or Release Build Actions For Nats Server Runner
 
 on:
-  push:
-    branches:
-      - main
   release:
     branches:
       - main
@@ -47,9 +44,6 @@ jobs:
         run: chmod +x gradlew && ./gradlew clean test
       - name: Verify Javadoc
         run: ./gradlew javadoc
-      - name: On Merge to Main, Verify and Publish Snapshot
-        if: ${{ success() && github.event_name == 'push' }}
-        run: ./gradlew -i publishToSonatype
-      - name: On Tag Release Main, Verify, Sign and Publish Release
+      - name: Verify, Sign and Publish Release
         if: ${{ success() && github.event_name == 'release' }}
         run: ./gradlew -i signArchives signMavenJavaPublication publishToSonatype closeAndReleaseSonatypeStagingRepository

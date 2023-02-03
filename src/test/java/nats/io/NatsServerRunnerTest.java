@@ -59,7 +59,7 @@ public class NatsServerRunnerTest extends TestBase {
     public void testWithoutDebugAndJetStreamBuilder(boolean debug, boolean jetStream) throws IOException, InterruptedException {
         try (NatsServerRunner runner = NatsServerRunner.builder()
             .debug(debug)
-            .jetStream(jetStream)
+            .jetstream(jetStream)
             .build())
         {
             validateBasics(runner, debug, jetStream);
