@@ -594,7 +594,7 @@ public class NatsServerRunner implements AutoCloseable {
         }
 
         public Builder configInserts(String[] configInserts) {
-            this.configInserts = configInserts == null ? null : Arrays.asList(configInserts);
+            this.configInserts = configInserts == null || configInserts.length == 0 ? null : Arrays.asList(configInserts);
             return this;
         }
 
@@ -604,7 +604,7 @@ public class NatsServerRunner implements AutoCloseable {
         }
 
         public Builder customArgs(String[] customArgs) {
-            this.customArgs = customArgs == null ? null : Arrays.asList(customArgs);
+            this.customArgs = customArgs == null || customArgs.length == 0 ? null : Arrays.asList(customArgs);
             return this;
         }
 
