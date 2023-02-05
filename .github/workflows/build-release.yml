@@ -1,4 +1,4 @@
-name: GitHub Merge Or Release Build Actions For Nats Server Runner
+name: Build Release
 
 on:
   release:
@@ -45,5 +45,4 @@ jobs:
       - name: Verify Javadoc
         run: ./gradlew javadoc
       - name: Verify, Sign and Publish Release
-        if: ${{ success() && github.event_name == 'release' }}
         run: ./gradlew -i signArchives signMavenJavaPublication publishToSonatype closeAndReleaseSonatypeStagingRepository

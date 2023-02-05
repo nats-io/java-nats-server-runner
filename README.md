@@ -7,6 +7,7 @@ Run the [NATS messaging system](https://nats.io) Server from your Java code.
 [![License Apache 2](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.nats/jnats-server-runner/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.nats/jnats-server-runner)
 [![Javadoc](http://javadoc.io/badge/io.nats/jnats-server-runner.svg?branch=main)](http://javadoc.io/doc/io.nats/jnats-server-runner?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/nats-io/java-nats-server-runner/badge.svg?branch=main)](https://coveralls.io/github/nats-io/java-nats-server-runner?branch=main)
 [![Build Main Badge](https://github.com/nats-io/java-nats-server-runner/actions/workflows/build-main.yml/badge.svg?event=push)](https://github.com/nats-io/java-nats-server-runner/actions/workflows/build-main.yml)
 [![Release Badge](https://github.com/nats-io/java-nats-server-runner/actions/workflows/build-release.yml/badge.svg?event=release)](https://github.com/nats-io/java-nats-server-runner/actions/workflows/build-release.yml)
 
