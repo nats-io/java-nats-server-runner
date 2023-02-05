@@ -653,10 +653,6 @@ public class NatsServerRunner implements AutoCloseable {
             return this;
         }
 
-        public NatsServerRunner build() throws IOException {
-            return new NatsServerRunner(this);
-        }
-
         public Builder runnerOptions(NatsServerRunnerOptions nsro) {
             port(nsro.port())
                 .debugLevel(nsro.debugLevel())
@@ -668,6 +664,14 @@ public class NatsServerRunner implements AutoCloseable {
                 .outputLogger(nsro.logger())
                 .outputLevel(nsro.logLevel());
             return this;
+        }
+
+        public NatsServerRunner build() throws IOException {
+            return new NatsServerRunner(this);
+        }
+
+        public NatsServerRunnerOptions buildOptions() {
+            return new NatsServerRunnerOptionsImpl(this);
         }
     }
 
@@ -681,6 +685,10 @@ public class NatsServerRunner implements AutoCloseable {
         DefaultOutputSupplier = outputSupplier == null ? defaultLoggingSupplier() : outputSupplier;
     }
 
+    public static Supplier<Output> defaultOutputSupplier() {
+        return DefaultOutputSupplier;
+    }
+
     private static Supplier<Output> defaultLoggingSupplier() {
         return () -> new LoggingOutput(Logger.getLogger(NatsServerRunner.class.getName()));
     }
@@ -689,7 +697,7 @@ public class NatsServerRunner implements AutoCloseable {
         DefaultOutputLevel = defaultOutputLevel;
     }
 
-    public static Level getDefaultLoggingLevel() {
+    public static Level defaultOutputLevel() {
         return DefaultOutputLevel;
     }
 }

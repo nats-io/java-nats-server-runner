@@ -15,6 +15,7 @@ package nats.io;
 
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static java.util.logging.Level.*;
 
@@ -23,10 +24,6 @@ public class ConsoleOutput implements Output {
 
     protected String format(Level targetLevel, String msg) {
         return targetLevel + ": " + msg;
-    }
-
-    protected String format(Level targetLevel, Supplier<String> msgSupplier) {
-        return format(targetLevel, msgSupplier.get());
     }
 
     @Override
@@ -74,6 +71,16 @@ public class ConsoleOutput implements Output {
         if (shouldShow(INFO)) {
             System.out.println(format(INFO, msg));
         }
+    }
+
+    @Override
+    public boolean isLogger() {
+        return false;
+    }
+
+    @Override
+    public Logger getLogger() {
+        return null;
     }
 
     private boolean shouldShow(Level testLevel) {

@@ -15,6 +15,7 @@ package nats.io;
 
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public interface Output {
     void setLevel(Level level);
@@ -24,4 +25,6 @@ public interface Output {
     void warning(String msg);
     void info(Supplier<String> msgSupplier);
     void info(String msg);
+    boolean isLogger();
+    Logger getLogger();
 }

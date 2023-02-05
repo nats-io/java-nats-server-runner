@@ -58,4 +58,14 @@ public class LoggingOutput implements Output{
     public void info(String msg) {
         logger.info(msg);
     }
+
+    @Override
+    public boolean isLogger() {
+        return true;
+    }
+
+    @Override
+    public Logger getLogger() {
+        return logger;
+    }
 }
