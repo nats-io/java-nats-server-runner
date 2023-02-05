@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -141,19 +143,42 @@ public class NatsServerRunnerTest extends TestBase {
     }
 
     @Test
-    public void testNatsServerRunnerOptionsImpl() {
+    public void testBuilder() {
         Path p = Paths.get(".");
         NatsServerRunner.Builder builder = NatsServerRunner.builder()
             .port(1)
             .debugLevel(DebugLevel.DEBUG_VERBOSE_TRACE)
             .jetstream()
             .configFilePath(p)
-            .configInserts(new String[]{"inserts"})
-            .customArgs(new String[]{"custom"})
+            .configFilePath(p.toString())
+            .configInserts((String[])null)
+            .configInserts((List<String>)null)
+            .configInserts(new String[]{"discarded"})
+            .configInserts(Collections.singletonList("inserts"))
+            .customArgs((String[])null)
+            .customArgs((List<String>)null)
+            .customArgs(new String[]{"discarded"})
+            .customArgs(Collections.singletonList("custom"))
+            .executablePath((String)null)
+            .executablePath((Path)null)
             .executablePath(p)
-            .outputLevel(Level.OFF);
+            .executablePath(p.toString())
+            .outputLevel(Level.OFF)
+            .output(null)
+            .processCheckWait(11L)
+            .processCheckTries(12)
+            .connectCheckWait(13L)
+            .connectCheckTries(14)
+            ;
+
+        assertNull(builder.output);
+        assertEquals(11L, builder.processCheckWait);
+        assertEquals(12, builder.processCheckTries);
+        assertEquals(13L, builder.connectCheckWait);
+        assertEquals(14, builder.connectCheckTries);
 
         validateOptions(p, false, new NatsServerRunnerOptionsImpl(builder));
+        validateOptions(p, false, NatsServerRunner.builder().runnerOptions(new NatsServerRunnerOptionsImpl(builder)).buildOptions());
         validateOptions(p, false, builder.buildOptions());
         validateOptions(p, true, new NatsServerRunnerOptionsImpl(builder.outputLogger(Logger.getLogger("testNatsServerRunnerOptionsImpl"))));
     }
