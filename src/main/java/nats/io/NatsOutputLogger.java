@@ -63,7 +63,7 @@ final class NatsOutputLogger implements Runnable {
     }
 
     static void logOutput(final Output output, final Process process, final String processName) {
-        final String threadName = (isNotBlank(processName) ? processName : "unknown") + ":" + processId(process);
+        final String threadName = (isBlank(processName) ? "unknown" : processName) + ":" + processId(process);
         final Thread t = new Thread(new NatsOutputLogger(output, process));
         t.setName(threadName);
         t.setDaemon(true);
@@ -95,9 +95,5 @@ final class NatsOutputLogger implements Runnable {
             }
         }
         return true;
-    }
-
-    private static boolean isNotBlank(final CharSequence cs) {
-        return !isBlank(cs);
     }
 }

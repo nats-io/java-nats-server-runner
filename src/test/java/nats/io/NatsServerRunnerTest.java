@@ -18,26 +18,23 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
+
+import static nats.io.NatsServerRunner.defaultOutputSupplier;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NatsServerRunnerTest extends TestBase {
 
-    @Test
-    public void testWithoutConfigDefault() throws Exception {
-        try (NatsServerRunner runner = new NatsServerRunner()) {
-            validateBasics(runner, false, false);
-        }
-    }
-
-    @Test
-    public void testWithoutConfigDefaultBuilder() throws Exception {
-        try (NatsServerRunner runner = NatsServerRunner.builder().build()) {
-            validateBasics(runner, false, false);
-        }
-    }
-
-    private static Stream<Arguments> withoutDebugAndJetStreamArgs() {
+    private static Stream<Arguments> debugAndJetStreamArgs() {
         return Stream.of(
                 Arguments.of(false, false),
                 Arguments.of(true, false),
@@ -46,24 +43,61 @@ public class NatsServerRunnerTest extends TestBase {
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("withoutDebugAndJetStreamArgs")
-    public void testWithoutDebugAndJetStream(boolean debug, boolean jetStream) throws Exception {
-        try (NatsServerRunner runner = new NatsServerRunner(debug, jetStream)) {
-            validateBasics(runner, debug, jetStream);
-        }
+    @SuppressWarnings("resource")
+    @Test
+    public void testFixedConstructors() throws Exception {
+        validateVariousConstructors(false, false, NatsServerRunner::new);
+        validateVariousConstructors(false, false, () -> NatsServerRunner.builder().build());
     }
 
+    @SuppressWarnings("resource")
     @ParameterizedTest
-    @MethodSource("withoutDebugAndJetStreamArgs")
-    public void testWithoutDebugAndJetStreamBuilder(boolean debug, boolean jetStream) throws Exception {
-        try (NatsServerRunner runner = NatsServerRunner.builder()
-            .debug(debug)
-            .jetstream(jetStream)
-            .build())
-        {
-            validateBasics(runner, debug, jetStream);
-        }
+    @MethodSource("debugAndJetStreamArgs")
+    public void testParameterizedConstructors(boolean debug, boolean jetStream) throws Exception {
+        validateVariousConstructors(debug, false, () -> new NatsServerRunner(debug));
+        validateVariousConstructors(debug, jetStream, () -> new NatsServerRunner(debug, jetStream));
+        validateVariousConstructors(debug, jetStream, () -> NatsServerRunner.builder().debug(debug).jetstream(jetStream).build());
+        validateVariousConstructors(debug, jetStream, () -> {
+            try {
+                return new NatsServerRunner(NatsServerRunner.builder().debug(debug).jetstream(jetStream).buildOptions());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        validateVariousConstructors(debug, false, () -> new NatsServerRunner((String)null, debug));
+        validateVariousConstructors(debug, jetStream, () -> new NatsServerRunner((String)null, debug, jetStream));
+
+        validateVariousConstructors(false, false, () -> new NatsServerRunner((String[])null));
+        validateVariousConstructors(debug, false, () -> new NatsServerRunner((String[])null, debug));
+        validateVariousConstructors(debug, jetStream, () -> new NatsServerRunner((String[])null, debug, jetStream));
+
+        int port1 = NatsRunnerUtils.nextPort();
+        NatsServerRunner runner = validateVariousConstructors(debug, false, () -> new NatsServerRunner(port1, debug));
+        assertEquals(port1, runner.getPort());
+
+        int port2 = NatsRunnerUtils.nextPort();
+        runner = validateVariousConstructors(debug, jetStream, () -> new NatsServerRunner(port2, debug, jetStream));
+        assertEquals(port2, runner.getPort());
+
+        int port3 = NatsRunnerUtils.nextPort();
+        runner = validateVariousConstructors(debug, false, () -> new NatsServerRunner((String)null, port3, debug));
+        assertEquals(port3, runner.getPort());
+    }
+
+    interface RunnerSupplier {
+        NatsServerRunner get() throws IOException;
+    }
+
+    private NatsServerRunner validateVariousConstructors(boolean debug, boolean jetStream, RunnerSupplier supplier) throws Exception {
+        NatsServerRunner runner = supplier.get();
+        validateBasics(runner, debug, jetStream);
+        assertTrue(runner.getExecutablePath().contains("nats-server"));
+        String cmd = runner.getCmdLine();
+        assertEquals(debug, cmd.contains(" -DV"));
+        assertEquals(jetStream, cmd.contains(" -js"));
+        runner.shutdown(true);
+        return runner;
     }
 
     private static final String[] CUSTOMS_CONFIG_INSERTS = { "# custom insert this comment" };
@@ -132,5 +166,101 @@ public class NatsServerRunnerTest extends TestBase {
         {
             _testWithConfig(configFile, checkConnect, configInserts, runner);
         }
+    }
+
+    @Test
+    public void testBuilder() {
+        Path p = Paths.get(".");
+        NatsServerRunner.Builder builder = NatsServerRunner.builder()
+            .port(1)
+            .debugLevel(DebugLevel.DEBUG_VERBOSE_TRACE)
+            .jetstream()
+            .configFilePath(p)
+            .configFilePath(p.toString())
+            .configInserts(new String[0])
+            .configInserts((String[])null)
+            .configInserts(new ArrayList<>())
+            .configInserts((List<String>)null)
+            .configInserts(new String[]{"discarded"})
+            .configInserts(Collections.singletonList("inserts"))
+            .customArgs(new String[0])
+            .customArgs((String[])null)
+            .customArgs(new ArrayList<>())
+            .customArgs((List<String>)null)
+            .customArgs(new String[]{"discarded"})
+            .customArgs(Collections.singletonList("custom"))
+            .executablePath((String)null)
+            .executablePath((Path)null)
+            .executablePath(p)
+            .executablePath(p.toString())
+            .outputLevel(Level.OFF)
+            .output(null)
+            .processCheckWait(11L)
+            .processCheckTries(12)
+            .connectCheckWait(13L)
+            .connectCheckTries(14)
+            ;
+
+        assertNull(builder.output);
+        assertEquals(11L, builder.processCheckWait);
+        assertEquals(12, builder.processCheckTries);
+        assertEquals(13L, builder.connectCheckWait);
+        assertEquals(14, builder.connectCheckTries);
+
+        validateOptions(p, false, new NatsServerRunnerOptionsImpl(builder));
+        validateOptions(p, false, NatsServerRunner.builder().runnerOptions(new NatsServerRunnerOptionsImpl(builder)).buildOptions());
+        validateOptions(p, false, builder.buildOptions());
+        validateOptions(p, true, new NatsServerRunnerOptionsImpl(builder.outputLogger(Logger.getLogger("testNatsServerRunnerOptionsImpl"))));
+    }
+
+    private static void validateOptions(Path p, boolean logger, NatsServerRunnerOptions impl) {
+        assertEquals(1, impl.port());
+        assertEquals(DebugLevel.DEBUG_VERBOSE_TRACE, impl.debugLevel());
+        assertTrue(impl.jetStream());
+        assertEquals(p, impl.configFilePath());
+        assertEquals(1, impl.configInserts().size());
+        assertEquals("inserts", impl.configInserts().get(0));
+        assertEquals(1, impl.customArgs().size());
+        assertEquals("custom", impl.customArgs().get(0));
+        assertEquals(p, impl.executablePath());
+        assertEquals(Level.OFF, impl.logLevel());
+        if (logger) {
+            assertNotNull(impl.logger());
+            assertNotSame(Level.OFF, impl.logger().getLevel());
+        }
+        else {
+            assertNull(impl.logger());
+        }
+    }
+
+    @Test
+    public void testStaticStuff() {
+        Level initial = NatsServerRunner.defaultOutputLevel();
+        NatsServerRunner.setDefaultOutputLevel(Level.ALL);
+        assertEquals(Level.ALL, NatsServerRunner.defaultOutputLevel());
+
+        NatsServerRunner.setDefaultOutputLevel(initial);
+        assertEquals(initial, NatsServerRunner.defaultOutputLevel());
+
+        Supplier<Output> dflt = defaultOutputSupplier();
+        Supplier<Output> supplier = ConsoleOutput::new;
+        assertEquals(dflt, defaultOutputSupplier());
+        assertNotEquals(supplier, defaultOutputSupplier());
+
+        NatsServerRunner.setDefaultOutputSupplier(supplier);
+        assertNotEquals(dflt, defaultOutputSupplier());
+        assertEquals(supplier, defaultOutputSupplier());
+
+        NatsServerRunner.setDefaultOutputSupplier(null);
+        assertEquals(dflt, defaultOutputSupplier());
+        assertNotEquals(supplier, defaultOutputSupplier());
+    }
+
+    @Test
+    public void testShutdownCoverage() throws Exception {
+        NatsServerRunner runner = NatsServerRunner.builder().build();
+        runner.shutdown(false);
+        Thread.sleep(1000);
+        runner.shutdown();
     }
 }

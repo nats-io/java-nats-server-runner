@@ -20,7 +20,7 @@ import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NatsRunnerUtils {
+public abstract class NatsRunnerUtils {
     public static final String NATS_SERVER_PATH_ENV = "nats_server_path";
     public static final String DEFAULT_NATS_SERVER = "nats-server";
 
@@ -34,6 +34,8 @@ public class NatsRunnerUtils {
     public static final String PORT_PROPERTY = "port: ";
 
     private static String SERVER_PATH = null;
+
+    private NatsRunnerUtils() {}
 
     /**
      * Build a standard nats://localhost:port uri
@@ -139,7 +141,7 @@ public class NatsRunnerUtils {
                 throw new IllegalStateException(String.format("Process %s failed", pb.command()));
             }
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            ArrayList<String> lines = new ArrayList<String>();
+            ArrayList<String> lines = new ArrayList<>();
             String line = "";
             while ((line = reader.readLine())!= null) {
                 lines.add(line);

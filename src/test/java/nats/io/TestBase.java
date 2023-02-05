@@ -21,6 +21,7 @@ import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 
 import static java.util.stream.Collectors.toList;
 import static nats.io.NatsRunnerUtils.JETSTREAM_OPTION;
@@ -33,6 +34,10 @@ public class TestBase {
     protected static final String SOURCE_CONFIG_FILE_PATH = "src/test/resources/";
     
     protected static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"9.99.9\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
+
+    static {
+        NatsServerRunner.setDefaultOutputLevel(Level.WARNING);
+    }
 
     protected void validateBasics(NatsServerRunner runner, boolean debug, boolean jetStream) throws IOException {
         validateCommandLine(runner, debug, jetStream);
