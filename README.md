@@ -18,7 +18,7 @@ Useful for running unit or integration tests on the localhost.
 By default, the server is found in your path in this order: 
 - the `executablePath` set in the builder 
 - the path found in the `nats_server_path` environment variable
-- the path set via `NatsRunnerUtils.setServerPath` 
+- the path set via `NatsRunnerUtils.setServerPath` (deprecated, prefer setting in builder)
 - `nats-server` somewhere in the machine's path.
 
 For simple setup, constructors work well 
@@ -29,6 +29,8 @@ try (NatsServerRunner server = new NatsServerRunner()) {
     ...
     }
 ```
+
+### Builder
 
 For more complicated setup, use the `NatsServerRunnerBuilder`
 ```java
@@ -60,6 +62,20 @@ catch (Exception e) {
 }
 ```
 
+### Static Settings
+
+If you want to run multiple instances of the server, for instance in unit tests, you can do
+some setup statically to reduce the code in the builders. A simple way to do this would be
+to have a static initializer in base test class or something that is called before all uses.
+There are 3 methods available:
+
+```java
+static {
+    NatsServerRunner.setDefaultOutputSupplier(ConsoleOutput::new);
+    NatsServerRunner.setDefaultOutputLevel(Level.WARNING);
+    NatsServerRunner.setPreferredServerPath("/path/to/nats-server")
+}
+```
 
 ## License
 

@@ -676,28 +676,39 @@ public class NatsServerRunner implements AutoCloseable {
     }
 
     // ====================================================================================================
-    // Output
+    // Runner Wide Setting
     // ====================================================================================================
-    private static Supplier<Output> DefaultOutputSupplier = defaultLoggingSupplier();
+    private static final Supplier<Output> DefaultLoggingSupplier = () -> new LoggingOutput(Logger.getLogger(NatsServerRunner.class.getName()));
+
+    private static Supplier<Output> DefaultOutputSupplier = DefaultLoggingSupplier;
     private static Level DefaultOutputLevel = Level.INFO;
+    private static String PreferredServerPath = null;
 
-    public static void setDefaultOutputSupplier(Supplier<Output> outputSupplier) {
-        DefaultOutputSupplier = outputSupplier == null ? defaultLoggingSupplier() : outputSupplier;
-    }
-
-    public static Supplier<Output> defaultOutputSupplier() {
+    public static Supplier<Output> getDefaultOutputSupplier() {
         return DefaultOutputSupplier;
     }
 
-    private static Supplier<Output> defaultLoggingSupplier() {
-        return () -> new LoggingOutput(Logger.getLogger(NatsServerRunner.class.getName()));
+    public static void setDefaultOutputSupplier(Supplier<Output> outputSupplier) {
+        DefaultOutputSupplier = outputSupplier == null ? DefaultLoggingSupplier : outputSupplier;
+    }
+
+    public static Level getDefaultOutputLevel() {
+        return DefaultOutputLevel;
     }
 
     public static void setDefaultOutputLevel(Level defaultOutputLevel) {
         DefaultOutputLevel = defaultOutputLevel;
     }
 
-    public static Level defaultOutputLevel() {
-        return DefaultOutputLevel;
+    public static String getPreferredServerPath() {
+        return PreferredServerPath;
+    }
+
+    public static void setPreferredServerPath(String preferredServerPath) {
+        PreferredServerPath = preferredServerPath == null || preferredServerPath.length() == 0 ? null : preferredServerPath;
+    }
+
+    public static void clearPreferredServerPath() {
+        PreferredServerPath = null;
     }
 }

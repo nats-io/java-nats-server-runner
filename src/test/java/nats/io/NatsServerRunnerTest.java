@@ -29,7 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static nats.io.NatsServerRunner.defaultOutputSupplier;
+import static nats.io.NatsServerRunner.getDefaultOutputSupplier;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class NatsServerRunnerTest extends TestBase {
@@ -235,25 +235,25 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testStaticStuff() {
-        Level initial = NatsServerRunner.defaultOutputLevel();
+        Level initial = NatsServerRunner.getDefaultOutputLevel();
         NatsServerRunner.setDefaultOutputLevel(Level.ALL);
-        assertEquals(Level.ALL, NatsServerRunner.defaultOutputLevel());
+        assertEquals(Level.ALL, NatsServerRunner.getDefaultOutputLevel());
 
         NatsServerRunner.setDefaultOutputLevel(initial);
-        assertEquals(initial, NatsServerRunner.defaultOutputLevel());
+        assertEquals(initial, NatsServerRunner.getDefaultOutputLevel());
 
-        Supplier<Output> dflt = defaultOutputSupplier();
+        Supplier<Output> dflt = getDefaultOutputSupplier();
         Supplier<Output> supplier = ConsoleOutput::new;
-        assertEquals(dflt, defaultOutputSupplier());
-        assertNotEquals(supplier, defaultOutputSupplier());
+        assertEquals(dflt, getDefaultOutputSupplier());
+        assertNotEquals(supplier, getDefaultOutputSupplier());
 
         NatsServerRunner.setDefaultOutputSupplier(supplier);
-        assertNotEquals(dflt, defaultOutputSupplier());
-        assertEquals(supplier, defaultOutputSupplier());
+        assertNotEquals(dflt, getDefaultOutputSupplier());
+        assertEquals(supplier, getDefaultOutputSupplier());
 
         NatsServerRunner.setDefaultOutputSupplier(null);
-        assertEquals(dflt, defaultOutputSupplier());
-        assertNotEquals(supplier, defaultOutputSupplier());
+        assertEquals(dflt, getDefaultOutputSupplier());
+        assertNotEquals(supplier, getDefaultOutputSupplier());
     }
 
     @Test

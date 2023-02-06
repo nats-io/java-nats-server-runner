@@ -33,8 +33,6 @@ public abstract class NatsRunnerUtils {
     public static final String PORT_REGEX = "port: (\\d+)";
     public static final String PORT_PROPERTY = "port: ";
 
-    private static String SERVER_PATH = null;
-
     private NatsRunnerUtils() {}
 
     /**
@@ -69,37 +67,39 @@ public abstract class NatsRunnerUtils {
 
     /**
      * Set the path for the server. Will be used if {@value #NATS_SERVER_PATH_ENV} environment variable is not set.
-     * @deprecated Use {@link NatsServerRunner.Builder} instead
+     * @deprecated Use {@link NatsServerRunner#setPreferredServerPath} instead
      * @param serverPath the fully qualified path of the server
      */
     @Deprecated
     public static void setServerPath(String serverPath) {
-        SERVER_PATH = serverPath;
+        NatsServerRunner.setPreferredServerPath(serverPath);
     }
 
     /**
-     * Clear the path for the server. Will use {@value #DEFAULT_NATS_SERVER}
-     * if {@value #NATS_SERVER_PATH_ENV} environment variable is not set.
-     * @deprecated Use {@link NatsServerRunner.Builder} instead
+     * Clear the default path for the server.
+     * @deprecated Use {@link NatsServerRunner#clearPreferredServerPath} instead
      */
     @Deprecated
     public static void clearServerPath() {
-        SERVER_PATH = null;
+        NatsServerRunner.clearPreferredServerPath();
     }
 
     /**
      * Resolves the server executable path in this order:
      * <ol>
      * <li>Checking the {@value #NATS_SERVER_PATH_ENV} environment variable</li>
-     * <li>Checking the value set via {#setServerPath} method</li>
+     * <li>Checking the value set via {@link NatsServerRunner#setPreferredServerPath} method</li>
      * <li>{@value #DEFAULT_NATS_SERVER}</li>
      * </ol>
      * @return the resolved path
      */
     public static String getResolvedServerPath() {
-        String serverPath = System.getenv(NATS_SERVER_PATH_ENV);
+        String serverPath = NatsServerRunner.getPreferredServerPath();
         if (serverPath == null) {
-            serverPath = SERVER_PATH == null ? DEFAULT_NATS_SERVER : SERVER_PATH;
+            serverPath = System.getenv(NATS_SERVER_PATH_ENV);
+            if (serverPath == null) {
+                serverPath = DEFAULT_NATS_SERVER;
+            }
         }
         return serverPath;
     }
@@ -124,14 +124,25 @@ public abstract class NatsRunnerUtils {
 
     /**
      * Get the version string from the nats server i.e. nats-server: v2.2.2
+     * Using the server resolved by {@link #getResolvedServerPath}
      * @return the version string
      */
     public static String getNatsServerVersionString() {
+        return getNatsServerVersionString(getResolvedServerPath());
+    }
+
+
+    /**
+     * Get the version string from the nats server i.e. nats-server: v2.2.2
+     * @param serverPath the specific server path to check
+     * @return the version string
+     */
+    public static String getNatsServerVersionString(String serverPath) {
         ArrayList<String> cmd = new ArrayList<String>();
 
         // order of precedence is environment, value set statically, default
 
-        cmd.add(getResolvedServerPath());
+        cmd.add(serverPath);
         cmd.add(VERSION_OPTION);
 
         try {
