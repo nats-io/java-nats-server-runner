@@ -59,18 +59,18 @@ public class NatsClusterTest extends TestBase {
 
                     validateCommandLine(runner0, false, false);
                     validateHostAndPort(runner0);
-                    validateConfigLines(runner0, Collections.singletonList("name: clstr"));
+                    validateConfigLines(runner0, Collections.singletonList("name: cluster"));
 
                     connect(runner0);
 
                     validateCommandLine(runner1, false, false);
                     validateHostAndPort(runner1);
-                    validateConfigLines(runner1, Collections.singletonList("name: clstr"));
+                    validateConfigLines(runner1, Collections.singletonList("name: cluster"));
                     connect(runner1);
 
                     validateCommandLine(runner2, false, false);
                     validateHostAndPort(runner2);
-                    validateConfigLines(runner2, Collections.singletonList("name: clstr"));
+                    validateConfigLines(runner2, Collections.singletonList("name: cluster"));
                     connect(runner2);
                 }
             }

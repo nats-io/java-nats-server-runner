@@ -678,7 +678,7 @@ public class NatsServerRunner implements AutoCloseable {
     // ====================================================================================================
     // Runner Wide Setting
     // ====================================================================================================
-    private static final Supplier<Output> DefaultLoggingSupplier = () -> new LoggingOutput(Logger.getLogger(NatsServerRunner.class.getName()));
+    static final Supplier<Output> DefaultLoggingSupplier = () -> new LoggingOutput(Logger.getLogger(NatsServerRunner.class.getName()));
 
     private static Supplier<Output> DefaultOutputSupplier = DefaultLoggingSupplier;
     private static Level DefaultOutputLevel = Level.INFO;

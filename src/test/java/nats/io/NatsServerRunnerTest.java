@@ -29,6 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static nats.io.NatsServerRunner.DefaultLoggingSupplier;
 import static nats.io.NatsServerRunner.getDefaultOutputSupplier;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -252,8 +253,7 @@ public class NatsServerRunnerTest extends TestBase {
         assertEquals(supplier, getDefaultOutputSupplier());
 
         NatsServerRunner.setDefaultOutputSupplier(null);
-        assertEquals(dflt, getDefaultOutputSupplier());
-        assertNotEquals(supplier, getDefaultOutputSupplier());
+        assertEquals(DefaultLoggingSupplier, getDefaultOutputSupplier());
     }
 
     @Test
