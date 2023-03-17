@@ -14,9 +14,12 @@
 package nats.io;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +35,9 @@ public abstract class NatsRunnerUtils {
     public static final String CONF_FILE_EXT = ".conf";
     public static final String PORT_REGEX = "port: (\\d+)";
     public static final String PORT_PROPERTY = "port: ";
+    public static final int DEFAULT_CLUSTER_COUNT = 3;
+    public static final String DEFAULT_CLUSTER_NAME = "cluster";
+    public static final String DEFAULT_SERVER_NAME_PREFIX = "server";
 
     private NatsRunnerUtils() {}
 
@@ -170,54 +176,112 @@ public abstract class NatsRunnerUtils {
     }
 
     public static List<ClusterInsert> createClusterInserts() throws IOException {
-        return createClusterInserts(3, "clstr", "srvr");
+        return createClusterInserts(DEFAULT_CLUSTER_COUNT, DEFAULT_CLUSTER_NAME, DEFAULT_SERVER_NAME_PREFIX, false, null);
+    }
+
+    public static List<ClusterInsert> createClusterInserts(Path jsStoreDirBase) throws IOException {
+        return createClusterInserts(DEFAULT_CLUSTER_COUNT, DEFAULT_CLUSTER_NAME, DEFAULT_SERVER_NAME_PREFIX, false, jsStoreDirBase);
     }
 
     public static List<ClusterInsert> createClusterInserts(int count) throws IOException {
-        return createClusterInserts(count, "clstr", "srvr");
+        return createClusterInserts(count, DEFAULT_CLUSTER_NAME, DEFAULT_SERVER_NAME_PREFIX, false, null);
+    }
+
+    public static List<ClusterInsert> createClusterInserts(int count, Path jsStoreDirBase) throws IOException {
+        return createClusterInserts(count, DEFAULT_CLUSTER_NAME, DEFAULT_SERVER_NAME_PREFIX, false, jsStoreDirBase);
     }
 
     public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix) throws IOException {
-        List<ClusterInsert> clusterInserts = new ArrayList<>();
+        return createClusterInserts(createNodes(count, clusterName, serverNamePrefix, false, null));
+    }
+
+    public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix, Path jsStoreDirBase) throws IOException {
+        return createClusterInserts(createNodes(count, clusterName, serverNamePrefix, false, jsStoreDirBase));
+    }
+
+    public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix, boolean monitor) throws IOException {
+        return createClusterInserts(createNodes(count, clusterName, serverNamePrefix, monitor, null));
+    }
+
+    public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix, boolean monitor, Path jsStoreDirBase) throws IOException {
+        return createClusterInserts(createNodes(count, clusterName, serverNamePrefix, monitor, jsStoreDirBase));
+    }
+
+    public static String DEFAULT_HOST = "127.0.0.1";
+    public static int DEFAULT_PORT_START = 4220;
+    public static int DEFAULT_LISTEN_START = 4230;
+    public static int DEFAULT_MONITOR_START = 4280;
+
+    public static void defaultHost(String defaultHost) {
+        DEFAULT_HOST = defaultHost;
+    }
+
+    public static void defaultPortStart(int defaultPortStart) {
+        DEFAULT_PORT_START = defaultPortStart;
+    }
+
+    public static void defaultListenStart(int defaultListenStart) {
+        DEFAULT_LISTEN_START = defaultListenStart;
+    }
+
+    public static void defaultMonitorStart(int defaultMonitorStart) {
+        DEFAULT_MONITOR_START = defaultMonitorStart;
+    }
+
+    public static List<ClusterNode> createNodes(int count, String clusterName, String serverNamePrefix, boolean monitor, Path jsStoreDirBase) {
+        return createNodes(count, clusterName, serverNamePrefix, jsStoreDirBase,
+            DEFAULT_HOST, DEFAULT_PORT_START, DEFAULT_LISTEN_START,
+            monitor ? DEFAULT_MONITOR_START : null);
+    }
+
+    public static List<ClusterNode> createNodes(int count, String clusterName, String serverNamePrefix, Path jsStoreDirBase,
+                                                String host, int portStart, int listenStart, Integer monitorStart) {
+        List<ClusterNode> nodes = new ArrayList<>();
         for (int x = 0; x < count; x++) {
-            ClusterInsert ci = new ClusterInsert();
-            ci.id = x + 1;
-            ci.port = nextPort();
-            ci.listen = nextPort();
-            clusterInserts.add(ci);
+            int port = portStart + x;
+            int listen = listenStart + x;
+            Integer monitor = monitorStart == null ? null : monitorStart + x;
+            Path jsStoreDir = jsStoreDirBase == null ? null : Paths.get(jsStoreDirBase.toString(), "" + port);
+            nodes.add( new ClusterNode(clusterName, serverNamePrefix + x, host, port, listen, monitor, jsStoreDir));
         }
-        return finishCreateClusterInserts(clusterName, serverNamePrefix, clusterInserts);
+        return nodes;
     }
 
-    public static List<ClusterInsert> createClusterInserts(int[] ports, int[] listens, String clusterName, String serverNamePrefix) throws IOException {
-        List<ClusterInsert> clusterInserts = new ArrayList<>();
-        for (int x = 0; x < ports.length; x++) {
-            ClusterInsert ci = new ClusterInsert();
-            ci.id = x + 1;
-            ci.port = ports[x];
-            ci.listen = listens[x];
-            clusterInserts.add(ci);
-        }
-        return finishCreateClusterInserts(clusterName, serverNamePrefix, clusterInserts);
-    }
-
-    private static List<ClusterInsert> finishCreateClusterInserts(String clusterName, String serverNamePrefix, List<ClusterInsert> clusterInserts) {
-        for (ClusterInsert ci : clusterInserts) {
+    public static List<ClusterInsert> createClusterInserts(List<ClusterNode> nodes) {
+        List<ClusterInsert> inserts = new ArrayList<>();
+        for (ClusterNode node : nodes) {
             List<String> lines = new ArrayList<>();
-            lines.add("server_name=" + serverNamePrefix + ci.id);
+            lines.add("port:" + node.port);
+            if (node.monitor != null) {
+                lines.add("http:" + node.monitor);
+            }
+            if (node.jsStoreDir != null) {
+                String dir = node.jsStoreDir.toString();
+                if (File.separatorChar == '\\') {
+                    dir = dir.replace("\\", "\\\\").replace("/", "\\\\");
+                }
+                else {
+                    dir = dir.replace("\\", "/");
+                }
+                lines.add("jetstream {");
+                lines.add("    store_dir=" + dir);
+                lines.add("}");
+            }
+            lines.add("server_name=" + node.serverName);
             lines.add("cluster {");
-            lines.add("  name: " + clusterName);
-            lines.add("  listen: 127.0.0.1:" + ci.listen);
+            lines.add("  name: " + node.clusterName);
+            lines.add("  listen: " + node.host + ":" + node.listen);
             lines.add("  routes: [");
-            for (ClusterInsert ciRoutes : clusterInserts) {
-                if (ciRoutes.id != ci.id) {
-                    lines.add("    nats-route://127.0.0.1:" + ciRoutes.listen);
+            for (ClusterNode routeNode : nodes) {
+                if (!routeNode.serverName.equals(node.serverName)) {
+                    lines.add("    nats-route://" + node.host + ":" + routeNode.listen);
                 }
             }
             lines.add("  ]");
             lines.add("}");
-            ci.setInsert(lines);
+            inserts.add(new ClusterInsert(node, lines.toArray(new String[0])));
         }
-        return clusterInserts;
+        return inserts;
+
     }
 }
