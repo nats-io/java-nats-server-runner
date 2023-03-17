@@ -39,6 +39,11 @@ public abstract class NatsRunnerUtils {
     public static final String DEFAULT_CLUSTER_NAME = "cluster";
     public static final String DEFAULT_SERVER_NAME_PREFIX = "server";
 
+    public static String DEFAULT_HOST = "127.0.0.1";
+    public static int DEFAULT_PORT_START = 4220;
+    public static int DEFAULT_LISTEN_START = 4230;
+    public static int DEFAULT_MONITOR_START = 4280;
+
     private NatsRunnerUtils() {}
 
     /**
@@ -206,11 +211,6 @@ public abstract class NatsRunnerUtils {
     public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix, boolean monitor, Path jsStoreDirBase) throws IOException {
         return createClusterInserts(createNodes(count, clusterName, serverNamePrefix, monitor, jsStoreDirBase));
     }
-
-    public static String DEFAULT_HOST = "127.0.0.1";
-    public static int DEFAULT_PORT_START = 4220;
-    public static int DEFAULT_LISTEN_START = 4230;
-    public static int DEFAULT_MONITOR_START = 4280;
 
     public static void defaultHost(String defaultHost) {
         DEFAULT_HOST = defaultHost;

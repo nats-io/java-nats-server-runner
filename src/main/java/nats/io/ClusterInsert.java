@@ -21,4 +21,13 @@ public class ClusterInsert {
         this.node = node;
         this.configInserts = configInserts == null || configInserts.length == 0 ? null : configInserts;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (String s : configInserts) {
+            sb.append(s).append("\r\n");
+        }
+        return sb.toString();
+    }
 }

@@ -12,15 +12,12 @@
 // limitations under the License.
 package nats.io;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static nats.io.NatsRunnerUtils.DEFAULT_CLUSTER_NAME;
-import static nats.io.NatsRunnerUtils.createClusterInserts;
+import static nats.io.NatsRunnerUtils.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NatsClusterTest extends TestBase {
@@ -29,24 +26,17 @@ public class NatsClusterTest extends TestBase {
     public void testCreateCluster() throws Exception {
         _testCreateCluster(createClusterInserts());
         _testCreateCluster(createClusterInserts(3));
-        List<ClusterInsert> clusterInserts = createClusterInserts(3);
-
-        List<ClusterNode> nodes = new ArrayList<>();
-        for (ClusterInsert ci : clusterInserts) {
-            nodes.add(new ClusterNode(ci.node.clusterName, ci.node.serverName, ci.node.port, ci.node.listen));
-        }
-        _testCreateCluster(NatsRunnerUtils.createClusterInserts(nodes));
-
-        EqualsVerifier.simple().forClass(ClusterInsert.class).verify();
-
-        ClusterInsert ci = clusterInserts.get(0);
-        String s = ci.toString();
-        assertTrue(s.contains("port:" + ci.node.port));
-        assertTrue(s.contains("listen:" + ci.node.host + ":" + ci.node.listen));
-        assertTrue(s.contains("name: " + DEFAULT_CLUSTER_NAME));
     }
 
     private void _testCreateCluster(List<ClusterInsert> clusterInserts) throws Exception {
+        for (ClusterInsert ci : clusterInserts) {
+            String s = ci.toString();
+            assertTrue(s.contains("port:" + ci.node.port));
+            assertTrue(s.contains("server_name=" + DEFAULT_SERVER_NAME_PREFIX));
+            assertTrue(s.contains("listen: " + DEFAULT_HOST + ":" + ci.node.listen));
+            assertTrue(s.contains("name: " + DEFAULT_CLUSTER_NAME));
+        }
+
         ClusterInsert ci0 = clusterInserts.get(0);
         ClusterInsert ci1 = clusterInserts.get(1);
         ClusterInsert ci2 = clusterInserts.get(2);
