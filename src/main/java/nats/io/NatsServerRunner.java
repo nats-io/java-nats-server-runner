@@ -18,6 +18,7 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -35,6 +36,8 @@ import static nats.io.NatsRunnerUtils.*;
  * Server Runner
  */
 public class NatsServerRunner implements AutoCloseable {
+    public static final String ERROR_NOTE_PART_1 = "Make sure that the nats-server is installed and in your PATH.";
+    public static final String ERROR_NOTE_PART_2 = "See https://github.com/nats-io/nats-server for information on installation";
     public static long DEFAULT_PROCESS_CHECK_WAIT = 100;
     public static int DEFAULT_PROCESS_CHECK_TRIES = 10;
     public static long DEFAULT_RUN_CHECK_WAIT = 100;
@@ -310,8 +313,16 @@ public class NatsServerRunner implements AutoCloseable {
         _executablePath = b.executablePath == null ? getResolvedServerPath() : b.executablePath.toString();
         _port = b.port == null || b.port <= 0 ? nextPort() : b.port;
 
-        _displayOut = b.output == null ? DefaultOutputSupplier.get() : b.output;
-        _displayOut.setLevel(b.outputLevel == null ? DefaultOutputLevel : b.outputLevel);
+        if (b.output == null) {
+            _displayOut = DefaultOutputSupplier.get();
+            _displayOut.setLevel(DefaultOutputLevel);
+        }
+        else {
+            _displayOut = b.output;
+            if (b.outputLevel != null) {
+                _displayOut.setLevel(b.outputLevel);
+            }
+        }
 
         long procCheckWait = b.processCheckWait == null ? DEFAULT_PROCESS_CHECK_WAIT : b.processCheckWait;
         int procCheckTries = b.processCheckTries == null ? DEFAULT_PROCESS_CHECK_TRIES : b.processCheckTries;
@@ -361,6 +372,7 @@ public class NatsServerRunner implements AutoCloseable {
 
         _cmdLine = String.join(" ", cmd);
 
+        NatsOutputLogger nol = null;
         try {
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);
@@ -369,8 +381,7 @@ public class NatsServerRunner implements AutoCloseable {
             _displayOut.info("%%% Starting [" + _cmdLine + "] with redirected IO");
 
             process = pb.start();
-
-            NatsOutputLogger.logOutput(_displayOut, process, DEFAULT_NATS_SERVER);
+            nol = NatsOutputLogger.logOutput(_displayOut, process, DEFAULT_NATS_SERVER);
 
             int tries = procCheckTries;
             do {
@@ -401,15 +412,51 @@ public class NatsServerRunner implements AutoCloseable {
             }
 
             _displayOut.info("%%% Started [" + _cmdLine + "]");
+            nol.endStartupPhase();
         }
         catch (IOException ex) {
-            _displayOut.info("%%% Failed to start [" + _cmdLine + "] with message:");
-            _displayOut.info("\t" + ex.getMessage());
-            _displayOut.info("%%% Make sure that the nats-server is installed and in your PATH.");
-            _displayOut.info("%%% See https://github.com/nats-io/nats-server for information on installation");
-
-            throw new IllegalStateException("Failed to run [" + _cmdLine + "]");
+            _displayOut.error("%%% Failed to run [" + _cmdLine + "]");
+            String exMsg = ex.getMessage();
+            if (exMsg != null) {
+                _displayOut.error("    " + ex.getMessage());
+            }
+            _displayOut.error("%%% " + ERROR_NOTE_PART_1);
+            _displayOut.error("%%% " + ERROR_NOTE_PART_2);
+            StringBuilder exMessage = new StringBuilder("Failed to run [").append(_cmdLine).append("]");
+            if (b.fullErrorReportOnStartup) {
+                if (nol != null) {
+                    for (String line : nol.getStartupLines()) {
+                        exMessage.append(System.lineSeparator()).append(line);
+                    }
+                }
+                if (_cmdLine.contains(CONFIG_FILE_OPTION_NAME)) {
+                    String configPath = _configFile.getAbsolutePath();
+                    String configSep = getConfigSep(configPath);
+                    exMessage.append(System.lineSeparator()).append(configSep);
+                    exMessage.append(System.lineSeparator()).append(configPath);
+                    exMessage.append(System.lineSeparator()).append(configSep);
+                    try {
+                        List<String> lines = Files.readAllLines(_configFile.toPath());
+                        for (String line : lines) {
+                            exMessage.append(System.lineSeparator()).append(line);
+                        }
+                    }
+                    catch (Exception ignore) {
+                    }
+                    exMessage.append(System.lineSeparator()).append(configSep);
+                }
+            }
+            throw new IllegalStateException(exMessage.toString());
         }
+    }
+
+    private String getConfigSep(String configPath) {
+        StringBuilder sep = new StringBuilder("------------------------------");
+        int len = configPath.length();
+        while (sep.length() < len) {
+            sep.append(sep);
+        }
+        return sep.substring(0, len);
     }
 
     // ----------------------------------------------------------------------------------------------------
@@ -552,6 +599,7 @@ public class NatsServerRunner implements AutoCloseable {
         Integer processCheckTries;
         Long connectCheckWait;
         Integer connectCheckTries;
+        boolean fullErrorReportOnStartup = true;
 
         public Builder port(Integer port) {
             this.port = port;
@@ -650,6 +698,11 @@ public class NatsServerRunner implements AutoCloseable {
 
         public Builder connectCheckTries(Integer connectCheckTries) {
             this.connectCheckTries = connectCheckTries;
+            return this;
+        }
+
+        public Builder fullErrorReportOnStartup(boolean expandedError) {
+            this.fullErrorReportOnStartup = expandedError;
             return this;
         }
 

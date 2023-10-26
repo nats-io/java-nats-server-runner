@@ -21,6 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -35,21 +37,36 @@ import java.util.logging.Logger;
 final class NatsOutputLogger implements Runnable {
     private final Output output;
     private final BufferedReader reader;
+    private final List<String> startupLines;
+    private boolean inStartupPhase;
 
     private NatsOutputLogger(Output output, Process process) {
         this.output = output;
         this.reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+        startupLines = new ArrayList<>();
+        inStartupPhase = true;
     }
 
-    private void logLine(String line) {
+    public void endStartupPhase() {
+        inStartupPhase = false;
+    }
+
+    public List<String> getStartupLines() {
+        return startupLines;
+    }
+
+    public void logInfo(String line) {
         output.info(() -> line);
+        if (inStartupPhase) {
+            startupLines.add(line);
+        }
     }
 
     @Override
     public void run() {
         try {
             try {
-                reader.lines().forEach(this::logLine);
+                reader.lines().forEach(this::logInfo);
             } catch (final UncheckedIOException e) {
                 output.warning(() -> "while reading output " + e);
             }
@@ -62,12 +79,14 @@ final class NatsOutputLogger implements Runnable {
         }
     }
 
-    static void logOutput(final Output output, final Process process, final String processName) {
+    static NatsOutputLogger logOutput(final Output output, final Process process, final String processName) {
         final String threadName = (isBlank(processName) ? "unknown" : processName) + ":" + processId(process);
-        final Thread t = new Thread(new NatsOutputLogger(output, process));
+        NatsOutputLogger nol = new NatsOutputLogger(output, process);
+        final Thread t = new Thread(nol);
         t.setName(threadName);
         t.setDaemon(true);
         t.start();
+        return nol;
     }
 
     private static String processId(Process process) {

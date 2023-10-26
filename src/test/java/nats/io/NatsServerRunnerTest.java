@@ -263,4 +263,18 @@ public class NatsServerRunnerTest extends TestBase {
         Thread.sleep(1000);
         runner.shutdown();
     }
+
+    @Test
+    public void testBadConfig() throws Exception {
+        try (NatsServerRunner runner = NatsServerRunner.builder()
+            .configFilePath(SOURCE_CONFIG_FILE_PATH + "bad.conf")
+            .output(new ConsoleOutput())
+            .build())
+        {
+        }
+        catch (Exception e) {
+            assertTrue(e.getMessage().contains("nats-server: Parse error on line 2"));
+            System.out.println(e);
+        }
+    }
 }
