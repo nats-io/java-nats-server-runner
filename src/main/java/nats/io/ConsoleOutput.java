@@ -68,7 +68,7 @@ public class ConsoleOutput implements Output {
 
     @Override
     public void info(String msg) {
-        if (shouldShow(INFO)) {
+        if (shouldShow(Level.INFO)) {
             System.out.println(format(INFO, msg));
         }
     }
@@ -83,7 +83,7 @@ public class ConsoleOutput implements Output {
         return null;
     }
 
-    private boolean shouldShow(Level testLevel) {
-        return level.intValue() <= testLevel.intValue();
+    protected boolean shouldShow(Level testLevel) {
+        return level.intValue() <= testLevel.intValue() && testLevel != OFF;
     }
 }
