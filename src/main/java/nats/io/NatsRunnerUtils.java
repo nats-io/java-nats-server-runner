@@ -34,7 +34,9 @@ public abstract class NatsRunnerUtils {
     public static final String CONF_FILE_PREFIX = "nats_java_test";
     public static final String CONF_FILE_EXT = ".conf";
     public static final String PORT_REGEX = "port: (\\d+)";
+    public static final String PORT_MAPPED_REGEX = "port: <(\\w+)>";
     public static final String PORT_PROPERTY = "port: ";
+    public static final String PORT_LINE_KEY = "port_line_key";
     public static final int DEFAULT_CLUSTER_COUNT = 3;
     public static final String DEFAULT_CLUSTER_NAME = "cluster";
     public static final String DEFAULT_SERVER_NAME_PREFIX = "server";

@@ -32,7 +32,7 @@ import static org.junit.platform.commons.util.CollectionUtils.toUnmodifiableList
 public class TestBase {
 
     protected static final String SOURCE_CONFIG_FILE_PATH = "src/test/resources/";
-    
+
     protected static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"9.99.9\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
 
     static {
@@ -65,9 +65,10 @@ public class TestBase {
     }
 
     protected void validateConfigLines(NatsServerRunner runner, String configFile, String[] configInserts) throws IOException {
+        //noinspection resource
         List<String> expected = Files.lines(new File(SOURCE_CONFIG_FILE_PATH + configFile).toPath())
             .map(String::trim)
-            .filter(s -> s.length() > 0)
+            .filter(s -> !s.isEmpty())
             .filter(s -> !s.contains("port"))
             .collect(toList());
         Collections.addAll(expected, configInserts);
@@ -75,17 +76,22 @@ public class TestBase {
     }
 
     protected void validateConfigLines(NatsServerRunner runner, List<String> expected) throws IOException {
-        List<String> lines = Files.lines(new File(runner.getConfigFile()).toPath())
-            .map(String::trim)
-            .filter(s -> s.length() > 0)
-            .collect(toUnmodifiableList());
-
+        List<String> lines = getConfigLinesRemoveEmpty(runner);
         assertTrue(lines.contains("port: " + runner.getPort()));
         if (expected != null) {
             for (String ex : expected) {
                 assertTrue(lines.contains(ex));
             }
         }
+    }
+
+    protected static List<String> getConfigLinesRemoveEmpty(NatsServerRunner runner) throws IOException {
+        //noinspection resource
+        List<String> lines = Files.lines(new File(runner.getConfigFile()).toPath())
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(toUnmodifiableList());
+        return lines;
     }
 
     protected void connect(NatsServerRunner runner) throws IOException {

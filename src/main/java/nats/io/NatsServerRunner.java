@@ -21,9 +21,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,7 +43,7 @@ public class NatsServerRunner implements AutoCloseable {
 
     private final String _executablePath;
     private final Output _displayOut;
-    private final int _port;
+    private final Map<String, Integer> _ports;
     private final File _configFile;
     private final String _cmdLine;
     private Process process;
@@ -311,7 +309,9 @@ public class NatsServerRunner implements AutoCloseable {
     // ----------------------------------------------------------------------------------------------------
     protected NatsServerRunner(Builder b) throws IOException {
         _executablePath = b.executablePath == null ? getResolvedServerPath() : b.executablePath.toString();
-        _port = b.port == null || b.port <= 0 ? nextPort() : b.port;
+        _ports = new HashMap<>();
+        int constructionPort = b.port == null || b.port <= 0 ? nextPort() : b.port;
+        _ports.put(PORT_LINE_KEY, constructionPort);
 
         if (b.output == null) {
             _displayOut = DefaultOutputSupplier.get();
@@ -336,7 +336,7 @@ public class NatsServerRunner implements AutoCloseable {
             _configFile = File.createTempFile(CONF_FILE_PREFIX, CONF_FILE_EXT);
             BufferedWriter writer = new BufferedWriter(new FileWriter(_configFile));
             if (b.configFilePath == null || processSuppliedConfigFile(writer, b.configFilePath)) {
-                writePortLine(writer, _port);
+                writePortLine(writer, constructionPort);
             }
 
             if (b.configInserts != null) {
@@ -389,7 +389,7 @@ public class NatsServerRunner implements AutoCloseable {
             }
             while (!process.isAlive() && --tries > 0);
 
-            SocketAddress addr = new InetSocketAddress("localhost", _port);
+            SocketAddress addr = new InetSocketAddress("localhost", constructionPort);
             SocketChannel socketChannel = SocketChannel.open();
             socketChannel.configureBlocking(true);
             if (connCheckTries > 0) {
@@ -463,24 +463,38 @@ public class NatsServerRunner implements AutoCloseable {
     // HELPERS
     // ----------------------------------------------------------------------------------------------------
     private boolean processSuppliedConfigFile(BufferedWriter writer, Path configFilePath) throws IOException {
-        Pattern portPattern = Pattern.compile(PORT_REGEX);
-        Matcher portMatcher = portPattern.matcher("");
+        Matcher constructionPortMatcher = Pattern.compile(PORT_REGEX).matcher("");
+        Matcher mappedPortMatcher = Pattern.compile(PORT_MAPPED_REGEX).matcher("");
 
         BufferedReader reader = new BufferedReader(new FileReader(configFilePath.toFile()));
 
         boolean needsPortLine = true;
         String line = reader.readLine();
         while (line != null) {
-            portMatcher.reset(line);
 
             // replacing it here allows us to not care if the port is at the top level
             // or for instance inside a websocket block
-            if (portMatcher.find()) {
-                writeLine(writer, line.replace(portMatcher.group(1), String.valueOf(_port)));
+            constructionPortMatcher.reset(line);
+            if (constructionPortMatcher.find()) {
+                writeLine(writer, line.replace(constructionPortMatcher.group(1), _ports.get(PORT_LINE_KEY).toString()));
                 needsPortLine = false;
             }
             else {
-                writeLine(writer, line);
+                mappedPortMatcher.reset(line);
+                if (mappedPortMatcher.find()) {
+                    int start = line.indexOf("<");
+                    int end = line.indexOf(">");
+                    String key = line.substring(start + 1, end);
+                    Integer mapped = _ports.get(key);
+                    if (mapped == null) {
+                        mapped = nextPort();
+                        _ports.put(key, mapped);
+                    }
+                    writeLine(writer, line.replace("<" + key + ">", mapped.toString()));
+                }
+                else {
+                    writeLine(writer, line);
+                }
             }
 
             line = reader.readLine();
@@ -523,7 +537,11 @@ public class NatsServerRunner implements AutoCloseable {
      * @return the port number
      */
     public int getPort() {
-        return _port;
+        return _ports.get(PORT_LINE_KEY);
+    }
+
+    public Integer getPort(String key) {
+        return _ports.get(key);
     }
 
     /**
@@ -539,7 +557,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @return the uri string
      */
     public String getURI() {
-        return getNatsLocalhostUri(_port);
+        return getNatsLocalhostUri(_ports.get(PORT_LINE_KEY));
     }
 
     /**
