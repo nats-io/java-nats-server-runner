@@ -29,6 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static nats.io.NatsRunnerUtils.PORT_LINE_KEY;
 import static nats.io.NatsServerRunner.DefaultLoggingSupplier;
 import static nats.io.NatsServerRunner.getDefaultOutputSupplier;
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,10 +38,10 @@ public class NatsServerRunnerTest extends TestBase {
 
     private static Stream<Arguments> debugAndJetStreamArgs() {
         return Stream.of(
-                Arguments.of(false, false),
-                Arguments.of(true, false),
-                Arguments.of(false, true),
-                Arguments.of(true, true)
+            Arguments.of(false, false),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(true, true)
         );
     }
 
@@ -131,10 +132,10 @@ public class NatsServerRunnerTest extends TestBase {
 
     private static Stream<Arguments> withConfigArgs() {
         return Stream.of(
-                Arguments.of("port_not_specified.conf", true),
-                Arguments.of("port_specified.conf", true),
-                Arguments.of("websocket.conf", false),
-                Arguments.of("ws.conf", false)
+            Arguments.of("port_not_specified.conf", true),
+            Arguments.of("port_specified.conf", true),
+            Arguments.of("websocket.conf", false),
+            Arguments.of("ws.conf", false)
         );
     }
 
@@ -166,6 +167,48 @@ public class NatsServerRunnerTest extends TestBase {
             .build())
         {
             _testWithConfig(configFile, checkConnect, configInserts, runner);
+        }
+    }
+
+    private static Stream<Arguments> mappedPortsArgs() {
+        return Stream.of(
+            Arguments.of("port_mapped_needs_port_line_yes.conf", false),
+            Arguments.of("port_mapped_needs_port_line_no.conf", true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("mappedPortsArgs")
+    public void testMappedPorts(String configFile, boolean mainFirst) throws Exception {
+        try (NatsServerRunner runner = new NatsServerRunner(SOURCE_CONFIG_FILE_PATH + configFile, null, -1, false)) {
+            Integer mainPort = runner.getPort(PORT_LINE_KEY);
+            Integer wsPort = runner.getPort("ws");
+            assertNotNull(mainPort);
+            assertNotNull(wsPort);
+
+            String mainString = "port: " + mainPort;
+            String wsString = "port: " + wsPort;
+
+            int mainLine = -1;
+            int wsLine = -1;
+
+            List<String> lines = getConfigLinesRemoveEmpty(runner);
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (line.contains(mainString)) {
+                    mainLine = i;
+                }
+                else if (line.contains(wsString)) {
+                    wsLine = i;
+                }
+            }
+            if (mainFirst) {
+                assertTrue(mainLine < wsLine);
+            }
+            else {
+                assertFalse(mainLine < wsLine);
+            }
+            connect(runner);
         }
     }
 
@@ -274,7 +317,6 @@ public class NatsServerRunnerTest extends TestBase {
         }
         catch (Exception e) {
             assertTrue(e.getMessage().contains("nats-server: Parse error on line 2"));
-            System.out.println(e);
         }
     }
 }
