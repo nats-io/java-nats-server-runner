@@ -17,7 +17,7 @@ public class NatsServerRunnerOptionsImpl implements NatsServerRunnerOptions {
     private final Level logLevel;
 
     public NatsServerRunnerOptionsImpl(NatsServerRunner.Builder builder) {
-        this.port = builder.port;
+        this.port = builder.ports.get(NatsRunnerUtils.MAIN_PORT);
         this.debugLevel = builder.debugLevel;
         this.jetstream = builder.jetstream;
         this.configFilePath = builder.configFilePath;

@@ -29,7 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static nats.io.NatsRunnerUtils.PORT_LINE_KEY;
+import static nats.io.NatsRunnerUtils.MAIN_PORT;
 import static nats.io.NatsServerRunner.DefaultLoggingSupplier;
 import static nats.io.NatsServerRunner.getDefaultOutputSupplier;
 import static org.junit.jupiter.api.Assertions.*;
@@ -181,7 +181,7 @@ public class NatsServerRunnerTest extends TestBase {
     @MethodSource("mappedPortsArgs")
     public void testMappedPorts(String configFile, boolean mainFirst) throws Exception {
         try (NatsServerRunner runner = new NatsServerRunner(SOURCE_CONFIG_FILE_PATH + configFile, null, -1, false)) {
-            Integer mainPort = runner.getPort(PORT_LINE_KEY);
+            Integer mainPort = runner.getPort(MAIN_PORT);
             Integer wsPort = runner.getPort("ws");
             assertNotNull(mainPort);
             assertNotNull(wsPort);
