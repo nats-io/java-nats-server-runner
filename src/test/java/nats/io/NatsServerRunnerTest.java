@@ -171,9 +171,9 @@ public class NatsServerRunnerTest extends TestBase {
     }
 
     private static final int MATCH_NOTHING = 0;
-    private static final int MATCH_USER = 1;
-    private static final int MATCH_MAP = 2;
-    private static final int MATCH_4222 = 4;
+    private static final int MATCH_USER = -1;
+    private static final int MATCH_MAP = 999;
+    private static final int MATCH_4222 = 4222;
 
     private static Stream<Arguments> mappedPortsArgs() {
         return Stream.of(
