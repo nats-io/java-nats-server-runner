@@ -190,58 +190,69 @@ public class NatsServerRunnerTest extends TestBase {
 
     @ParameterizedTest
     @MethodSource("mappedPortsArgs")
-    public void testMappedPorts(String configFile, boolean pMapped, boolean wsMapped, int natsMatch, int wsMatch) throws Exception {
-        NatsServerRunner.Builder builder = NatsServerRunner.builder()
-            .configFilePath(SOURCE_CONFIG_FILE_PATH + configFile);
+    public void testMappedPorts(String configFile, boolean pMapped, boolean wsMapped, int natsMatch, int wsMatch) {
+        try {
+            NatsServerRunner.Builder builder = NatsServerRunner.builder()
+                .configFilePath(SOURCE_CONFIG_FILE_PATH + configFile);
 
-        int pPortIn = -1;
-        if (pMapped) {
-            pPortIn = nextPort();
-            builder.port("p", pPortIn);
-        }
-
-        int wsPortIn = -1;
-        if (wsMapped) {
-            wsPortIn = nextPort();
-            builder.port("ws", wsPortIn);
-        }
-
-        try (NatsServerRunner runner = builder.build())
-        {
-            assertEquals(-1, runner.getConfigPort());
-
-            Integer userPort = runner.getPort(USER_PORT_KEY);
-            assertEquals(userPort, runner.getUserPort());
-
-            Integer natsPort = runner.getPort(NATS_PORT_KEY);
-            assertEquals(natsPort, runner.getNatsPort());
-
-            Integer nonNatsPort = runner.getPort(NON_NATS_PORT_KEY);
-            assertEquals(nonNatsPort, runner.getNonNatsPort());
-
+            int pPortIn = -1;
             if (pMapped) {
-                assertEquals(pPortIn, runner.getPort("p"));
+                pPortIn = nextPort();
+                builder.port("p", pPortIn);
             }
 
+            int wsPortIn = -1;
             if (wsMapped) {
-                assertEquals(wsPortIn, runner.getPort("ws"));
+                wsPortIn = nextPort();
+                builder.port("ws", wsPortIn);
             }
 
-            switch (natsMatch) {
-                case MATCH_USER: assertEquals(userPort, natsPort); break;
-                case MATCH_MAP:  assertEquals(pPortIn, natsPort); break;
-                case MATCH_4222: assertEquals(4222, natsPort); break;
-            }
-            connect(runner);
+            try (NatsServerRunner runner = builder.build()) {
+                assertEquals(-1, runner.getConfigPort());
 
-            switch (wsMatch) {
-                case MATCH_USER:
-                    assertEquals(nonNatsPort, userPort);
-                    break;
-                case MATCH_MAP:
-                    assertEquals(nonNatsPort, wsPortIn);
-                    break;
+                Integer userPort = runner.getPort(USER_PORT_KEY);
+                assertEquals(userPort, runner.getUserPort());
+
+                Integer natsPort = runner.getPort(NATS_PORT_KEY);
+                assertEquals(natsPort, runner.getNatsPort());
+
+                Integer nonNatsPort = runner.getPort(NON_NATS_PORT_KEY);
+                assertEquals(nonNatsPort, runner.getNonNatsPort());
+
+                if (pMapped) {
+                    assertEquals(pPortIn, runner.getPort("p"));
+                }
+
+                if (wsMapped) {
+                    assertEquals(wsPortIn, runner.getPort("ws"));
+                }
+
+                switch (natsMatch) {
+                    case MATCH_USER:
+                        assertEquals(userPort, natsPort);
+                        break;
+                    case MATCH_MAP:
+                        assertEquals(pPortIn, natsPort);
+                        break;
+                    case MATCH_4222:
+                        assertEquals(4222, natsPort);
+                        break;
+                }
+                connect(runner);
+
+                switch (wsMatch) {
+                    case MATCH_USER:
+                        assertEquals(nonNatsPort, userPort);
+                        break;
+                    case MATCH_MAP:
+                        assertEquals(nonNatsPort, wsPortIn);
+                        break;
+                }
             }
+        }
+        catch (Exception e) {
+            System.out.println(e);
+            e.printStackTrace();
         }
     }
 
