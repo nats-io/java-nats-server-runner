@@ -29,7 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static nats.io.NatsRunnerUtils.MAIN_PORT;
+import static nats.io.NatsRunnerUtils.*;
 import static nats.io.NatsServerRunner.DefaultLoggingSupplier;
 import static nats.io.NatsServerRunner.getDefaultOutputSupplier;
 import static org.junit.jupiter.api.Assertions.*;
@@ -132,8 +132,8 @@ public class NatsServerRunnerTest extends TestBase {
 
     private static Stream<Arguments> withConfigArgs() {
         return Stream.of(
-            Arguments.of("port_not_specified.conf", true),
-            Arguments.of("port_specified.conf", true),
+            Arguments.of("config_port_missing_ws_no.conf", true),
+            Arguments.of("config_port_user_ws_no.conf", true),
             Arguments.of("websocket.conf", false),
             Arguments.of("ws.conf", false)
         );
@@ -150,7 +150,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @ParameterizedTest
     @MethodSource("withConfigArgs")
-    public void testWithConfig(String configFile, boolean checkConnect) throws Exception {
+    public void testWithConfigParams(String configFile, boolean checkConnect) throws Exception {
         String[] configInserts = { "# custom insert this comment " + configFile };
         try (NatsServerRunner runner = new NatsServerRunner(SOURCE_CONFIG_FILE_PATH + configFile, configInserts, -1, false)) {
             _testWithConfig(configFile, checkConnect, configInserts, runner);
@@ -170,46 +170,87 @@ public class NatsServerRunnerTest extends TestBase {
         }
     }
 
+    private static final int MATCH_NOTHING = 0;
+    private static final int MATCH_USER = 1;
+    private static final int MATCH_MAP = 2;
+    private static final int MATCH_4222 = 4;
+
     private static Stream<Arguments> mappedPortsArgs() {
         return Stream.of(
-            Arguments.of("port_mapped_needs_port_line_yes.conf", false),
-            Arguments.of("port_mapped_needs_port_line_no.conf", true)
+            Arguments.of("config_port_mapped_ws_mapped.conf",  true,  true,  MATCH_MAP,  MATCH_MAP),
+            Arguments.of("config_port_mapped_ws_user.conf",    true,  false, MATCH_MAP,  MATCH_USER),
+            Arguments.of("config_port_mapped_ws_no.conf",      true,  false, MATCH_MAP,  MATCH_NOTHING),
+            Arguments.of("config_port_missing_ws_mapped.conf", false, true,  MATCH_USER, MATCH_MAP),
+            Arguments.of("config_port_missing_ws_user.conf",   false, false, MATCH_4222, MATCH_USER),
+            Arguments.of("config_port_missing_ws_no.conf",     false, false, MATCH_USER, MATCH_NOTHING),
+            Arguments.of("config_port_user_ws_mapped.conf",    false, true,  MATCH_USER, MATCH_MAP),
+            Arguments.of("config_port_user_ws_no.conf",        false, false, MATCH_USER, MATCH_MAP)
         );
     }
 
     @ParameterizedTest
     @MethodSource("mappedPortsArgs")
-    public void testMappedPorts(String configFile, boolean mainFirst) throws Exception {
-        try (NatsServerRunner runner = new NatsServerRunner(SOURCE_CONFIG_FILE_PATH + configFile, null, -1, false)) {
-            Integer mainPort = runner.getPort(MAIN_PORT);
-            Integer wsPort = runner.getPort("ws");
-            assertNotNull(mainPort);
-            assertNotNull(wsPort);
+    public void testMappedPorts(String configFile, boolean pMapped, boolean wsMapped, int natsMatch, int wsMatch) throws Exception {
+        NatsServerRunner.Builder builder = NatsServerRunner.builder()
+            .configFilePath(SOURCE_CONFIG_FILE_PATH + configFile);
 
-            String mainString = "port: " + mainPort;
-            String wsString = "port: " + wsPort;
+        int pPortIn = -1;
+        if (pMapped) {
+            pPortIn = nextPort();
+            builder.port("p", pPortIn);
+        }
 
-            int mainLine = -1;
-            int wsLine = -1;
+        int wsPortIn = -1;
+        if (wsMapped) {
+            wsPortIn = nextPort();
+            builder.port("ws", wsPortIn);
+        }
 
-            List<String> lines = getConfigLinesRemoveEmpty(runner);
-            for (int i = 0; i < lines.size(); i++) {
-                String line = lines.get(i);
-                if (line.contains(mainString)) {
-                    mainLine = i;
-                }
-                else if (line.contains(wsString)) {
-                    wsLine = i;
-                }
+        try (NatsServerRunner runner = builder.build())
+        {
+            assertEquals(-1, runner.getConfigPort());
+
+            Integer userPort = runner.getPort(USER_PORT_KEY);
+            assertEquals(userPort, runner.getUserPort());
+
+            Integer natsPort = runner.getPort(NATS_PORT_KEY);
+            assertEquals(natsPort, runner.getNatsPort());
+
+            Integer nonNatsPort = runner.getPort(NON_NATS_PORT_KEY);
+            assertEquals(nonNatsPort, runner.getNonNatsPort());
+
+            if (pMapped) {
+                assertEquals(pPortIn, runner.getPort("p"));
             }
-            if (mainFirst) {
-                assertTrue(mainLine < wsLine);
+
+            if (wsMapped) {
+                assertEquals(wsPortIn, runner.getPort("ws"));
             }
-            else {
-                assertFalse(mainLine < wsLine);
+
+            switch (natsMatch) {
+                case MATCH_USER: assertEquals(userPort, natsPort); break;
+                case MATCH_MAP:  assertEquals(pPortIn, natsPort); break;
+                case MATCH_4222: assertEquals(4222, natsPort); break;
             }
             connect(runner);
+
+            switch (wsMatch) {
+                case MATCH_USER:
+                    assertEquals(nonNatsPort, userPort);
+                    break;
+                case MATCH_MAP:
+                    assertEquals(nonNatsPort, wsPortIn);
+                    break;
+            }
         }
+    }
+
+    @Test
+    public void testTooManyUserPorts() {
+        assertThrows(IOException.class, () ->
+            NatsServerRunner.builder()
+                .configFilePath(SOURCE_CONFIG_FILE_PATH + "config_port_user_ws_user.conf")
+                .build());
     }
 
     @Test
