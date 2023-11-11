@@ -95,10 +95,14 @@ public class TestBase {
     }
 
     protected void connect(NatsServerRunner runner) throws IOException {
+        connect(runner.getNatsPort());
+    }
+
+    protected void connect(int port) throws IOException {
         Socket socket = new Socket();
-        SocketAddress socketAddress = new InetSocketAddress("127.0.0.1", runner.getPort());
+        SocketAddress socketAddress = new InetSocketAddress("127.0.0.1", port);
         socket.connect(socketAddress);
-        assertEquals(runner.getPort(), socket.getPort());
+        assertEquals(port, socket.getPort());
 
         socket.getOutputStream().write(CONNECT_BYTES);
         socket.getOutputStream().flush();
@@ -125,6 +129,6 @@ public class TestBase {
 
         String sbs = sb.toString().trim();
         assertTrue(sbs.startsWith("INFO"));
-        assertTrue(sbs.contains("\"port\":" + runner.getPort()));
+        assertTrue(sbs.contains("\"port\":" + port));
     }
 }

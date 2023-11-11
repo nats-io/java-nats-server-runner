@@ -15,7 +15,7 @@ package nats.io;
 
 import java.nio.file.Path;
 
-class ClusterNode {
+public class ClusterNode {
     public final String clusterName;
     public final String serverName;
     public final int port;

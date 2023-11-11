@@ -36,10 +36,15 @@ public abstract class NatsRunnerUtils {
     public static final String PORT_REGEX = "port: (\\d+)";
     public static final String PORT_MAPPED_REGEX = "port: <(\\w+)>";
     public static final String PORT_PROPERTY = "port: ";
-    public static final String PORT_LINE_KEY = "port_line_key";
+    public static final String CONFIG_PORT_KEY = "config_port";
+    public static final String USER_PORT_KEY = "user_port";
+    public static final String NATS_PORT_KEY = "nats_port";
+    public static final String NON_NATS_PORT_KEY = "non_nats_port";
     public static final int DEFAULT_CLUSTER_COUNT = 3;
     public static final String DEFAULT_CLUSTER_NAME = "cluster";
     public static final String DEFAULT_SERVER_NAME_PREFIX = "server";
+    public static final String NATS = "nats";
+    public static final String LOCALHOST = "localhost";
 
     public static String DEFAULT_HOST = "127.0.0.1";
     public static int DEFAULT_PORT_START = 4220;
@@ -56,7 +61,7 @@ public abstract class NatsRunnerUtils {
      */
     @Deprecated
     public static String getURIForPort(int port) {
-        return getLocalhostUri("nats", port);
+        return getUri(NATS, LOCALHOST, port);
     }
 
     /**
@@ -65,7 +70,17 @@ public abstract class NatsRunnerUtils {
      * @return the uri
      */
     public static String getNatsLocalhostUri(int port) {
-        return getLocalhostUri("nats", port);
+        return getUri(NATS, LOCALHOST, port);
+    }
+
+    /**
+     * Build a nats://host:port uri
+     * @param host the host
+     * @param port the port
+     * @return the uri
+     */
+    public static String getNatsUri(String host, int port) {
+        return getUri(NATS, host, port);
     }
 
     /**
@@ -75,7 +90,18 @@ public abstract class NatsRunnerUtils {
      * @return the uri
      */
     public static String getLocalhostUri(String schema, int port) {
-        return schema + "://localhost:" + port;
+        return getUri(schema, LOCALHOST, port);
+    }
+
+    /**
+     * Build a schema://host:port uri
+     * @param schema the schema
+     * @param host the host
+     * @param port the port
+     * @return the uri
+     */
+    public static String getUri(String schema, String host, int port) {
+        return schema + "://" + host + ":" + port;
     }
 
     /**
