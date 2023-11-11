@@ -59,17 +59,17 @@ public class OutputTest extends TestBase {
 
         OutputTestOutput oto = new OutputTestOutput();
         coverOutput(oto, false);
-        assertEquals(COVERAGE_LEVELS.length, oto.setLevelCount);
-        assertEquals(COVERAGE_LEVELS.length, oto.errorCount);
-        assertEquals(COVERAGE_LEVELS.length, oto.errorCountS);
-        assertEquals(COVERAGE_LEVELS.length, oto.warningCount);
-        assertEquals(COVERAGE_LEVELS.length, oto.warningCountS);
-        assertEquals(COVERAGE_LEVELS.length, oto.infoCount);
-        assertEquals(COVERAGE_LEVELS.length, oto.infoCountS);
+        assertEquals(SHOULD_SHOW_LEVELS.length, oto.setLevelCount);
+        assertEquals(SHOULD_SHOW_LEVELS.length, oto.errorCount);
+        assertEquals(SHOULD_SHOW_LEVELS.length, oto.errorCountS);
+        assertEquals(SHOULD_SHOW_LEVELS.length, oto.warningCount);
+        assertEquals(SHOULD_SHOW_LEVELS.length, oto.warningCountS);
+        assertEquals(SHOULD_SHOW_LEVELS.length, oto.infoCount);
+        assertEquals(SHOULD_SHOW_LEVELS.length, oto.infoCountS);
     }
 
     private void coverOutput(Output o, boolean isLogger) {
-        for (Level l : COVERAGE_LEVELS) {
+        for (Level l : SHOULD_SHOW_LEVELS) {
             o.setLevel(l);
             o.error("error, string, " + l);
             o.warning("warning, string, " + l);
@@ -83,6 +83,7 @@ public class OutputTest extends TestBase {
             }
             else {
                 assertFalse(o.isLogger());
+                assertNull(o.getLogger());
             }
         }
     }

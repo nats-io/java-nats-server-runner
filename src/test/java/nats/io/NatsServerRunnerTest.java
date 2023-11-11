@@ -20,10 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -330,6 +327,25 @@ public class NatsServerRunnerTest extends TestBase {
         }
         else {
             assertNull(impl.logger());
+        }
+    }
+
+    @Test
+    public void testBuilderMoreCoverage() throws Exception {
+        Map<String, Integer> map = new HashMap<>();
+        map.put("foo", 1);
+        NatsServerRunner.Builder builder = NatsServerRunner.builder()
+            .ports(map)
+            .output(new ConsoleOutput())
+            .fullErrorReportOnStartup(false);
+
+        try (NatsServerRunner sr = builder.build()) {
+            assertNotEquals(4222, sr.getNatsPort());
+            assertEquals(1, sr.getPort("foo"));
+        }
+
+        try(NatsServerRunner sr = new NatsServerRunner((String[])null, -1, true)) {
+            assertNotEquals(4222, sr.getNatsPort());
         }
     }
 

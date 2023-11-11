@@ -802,8 +802,8 @@ public class NatsServerRunner implements AutoCloseable {
             return this;
         }
 
-        public Builder fullErrorReportOnStartup(boolean expandedError) {
-            this.fullErrorReportOnStartup = expandedError;
+        public Builder fullErrorReportOnStartup(boolean fullErrorReportOnStartup) {
+            this.fullErrorReportOnStartup = fullErrorReportOnStartup;
             return this;
         }
 
