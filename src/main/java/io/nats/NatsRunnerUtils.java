@@ -11,13 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nats.io;
+package io.nats;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -212,6 +213,10 @@ public abstract class NatsRunnerUtils {
 
     public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix, boolean monitor, Path jsStoreDirBase) throws IOException {
         return createClusterInserts(createNodes(count, clusterName, serverNamePrefix, monitor, jsStoreDirBase));
+    }
+
+    public static Path getTemporaryJetStreamStoreDirBase() throws IOException {
+       return Files.createTempDirectory(null);
     }
 
     public static void defaultHost(String defaultHost) {

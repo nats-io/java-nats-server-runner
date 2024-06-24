@@ -10,7 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package nats.io;
+package io.nats;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 
+import static io.nats.NatsRunnerUtils.JETSTREAM_OPTION;
 import static java.util.stream.Collectors.toList;
-import static nats.io.NatsRunnerUtils.JETSTREAM_OPTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.platform.commons.util.CollectionUtils.toUnmodifiableList;

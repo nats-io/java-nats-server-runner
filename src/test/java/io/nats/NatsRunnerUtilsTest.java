@@ -11,12 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nats.io;
+package io.nats;
 
 import org.junit.jupiter.api.Test;
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable;
-import static nats.io.NatsRunnerUtils.*;
+import static io.nats.NatsRunnerUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class NatsRunnerUtilsTest extends TestBase {

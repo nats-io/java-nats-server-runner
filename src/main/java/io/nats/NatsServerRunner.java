@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nats.io;
+package io.nats;
 
 import java.io.*;
 import java.net.ConnectException;
@@ -28,7 +28,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static nats.io.NatsRunnerUtils.*;
+import static io.nats.NatsRunnerUtils.*;
 
 /**
  * Server Runner

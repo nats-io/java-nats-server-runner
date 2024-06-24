@@ -11,79 +11,61 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nats.io;
+package io.nats;
 
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.util.logging.Level.*;
+public class LoggingOutput implements Output{
+    private final Logger logger;
 
-public class ConsoleOutput implements Output {
-    private Level level = INFO;
-
-    protected String format(Level targetLevel, String msg) {
-        return targetLevel + ": " + msg;
+    public LoggingOutput(Logger logger) {
+        this.logger = logger;
     }
 
     @Override
     public void setLevel(Level level) {
-        this.level = level;
+        logger.setLevel(level);
     }
 
     @Override
     public void error(Supplier<String> msgSupplier) {
-        if (shouldShow(SEVERE)) {
-            System.err.println(format(SEVERE, msgSupplier.get()));
-        }
+        logger.severe(msgSupplier);
     }
 
     @Override
     public void error(String msg) {
-        if (shouldShow(SEVERE)) {
-            System.err.println(format(SEVERE, msg));
-        }
+        logger.severe(msg);
     }
 
     @Override
     public void warning(Supplier<String> msgSupplier) {
-        if (shouldShow(WARNING)) {
-            System.out.println(format(WARNING, msgSupplier.get()));
-        }
+        logger.warning(msgSupplier);
     }
 
     @Override
     public void warning(String msg) {
-        if (shouldShow(WARNING)) {
-            System.out.println(format(WARNING, msg));
-        }
+        logger.warning(msg);
     }
 
     @Override
     public void info(Supplier<String> msgSupplier) {
-        if (shouldShow(INFO)) {
-            System.out.println(format(INFO, msgSupplier.get()));
-        }
+        logger.info(msgSupplier);
     }
 
     @Override
     public void info(String msg) {
-        if (shouldShow(Level.INFO)) {
-            System.out.println(format(INFO, msg));
-        }
+        logger.info(msg);
     }
 
     @Override
     public boolean isLogger() {
-        return false;
+        return true;
     }
 
     @Override
     public Logger getLogger() {
-        return null;
-    }
-
-    protected boolean shouldShow(Level testLevel) {
-        return level.intValue() <= testLevel.intValue() && testLevel != OFF;
+        return logger;
     }
 }
