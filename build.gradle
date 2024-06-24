@@ -11,7 +11,7 @@ plugins {
     id 'signing'
 }
 
-def jarVersion = "1.2.8"
+def jarVersion = "2.0.0"
 group = 'io.nats'
 
 def isMerge = System.getenv("BUILD_EVENT") == "push"
@@ -38,11 +38,6 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    testLogging {
-        exceptionFormat = 'full'
-        events "started", "passed", "skipped", "failed"
-        showStandardStreams = true
-    }
 }
 
 javadoc {

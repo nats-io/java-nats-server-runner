@@ -10,31 +10,38 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package nats.io;
+
+package io.nats;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
 
-import static nats.io.NatsRunnerUtils.*;
+import static io.nats.NatsRunnerUtils.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NatsClusterTest extends TestBase {
 
     @Test
     public void testCreateCluster() throws Exception {
-        _testCreateCluster(createClusterInserts());
-        _testCreateCluster(createClusterInserts(3));
+        _testCreateCluster(createClusterInserts(), false);
+        _testCreateCluster(createClusterInserts(3), false);
+        _testCreateCluster(createClusterInserts(getTemporaryJetStreamStoreDirBase()), true);
+        _testCreateCluster(createClusterInserts(3, getTemporaryJetStreamStoreDirBase()), true);
     }
 
-    private void _testCreateCluster(List<ClusterInsert> clusterInserts) throws Exception {
+    private void _testCreateCluster(List<ClusterInsert> clusterInserts, boolean js) throws Exception {
         for (ClusterInsert ci : clusterInserts) {
             String s = ci.toString();
             assertTrue(s.contains("port:" + ci.node.port));
             assertTrue(s.contains("server_name=" + DEFAULT_SERVER_NAME_PREFIX));
             assertTrue(s.contains("listen: " + DEFAULT_HOST + ":" + ci.node.listen));
             assertTrue(s.contains("name: " + DEFAULT_CLUSTER_NAME));
+            if (js) {
+                assertTrue(s.contains("jetstream"));
+                assertTrue(s.contains("store_dir="));
+            }
         }
 
         ClusterInsert ci0 = clusterInserts.get(0);
