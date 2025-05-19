@@ -1,4 +1,4 @@
-package nats.io;
+package io.nats;
 
 import java.nio.file.Path;
 import java.util.List;

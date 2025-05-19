@@ -29,7 +29,7 @@ try (NatsServerRunner server = new NatsServerRunner()) {
     System.out.println("Server running on port: " + server.getPort())
     Connection c = Nats.connect(server.getURI());
     ...
-    }
+}
 ```
 
 ### Builder

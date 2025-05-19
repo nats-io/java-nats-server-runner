@@ -10,7 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package nats.io;
+package io.nats;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,9 +26,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static nats.io.NatsRunnerUtils.*;
-import static nats.io.NatsServerRunner.DefaultLoggingSupplier;
-import static nats.io.NatsServerRunner.getDefaultOutputSupplier;
+import static io.nats.NatsRunnerUtils.*;
+import static io.nats.NatsServerRunner.DefaultLoggingSupplier;
+import static io.nats.NatsServerRunner.getDefaultOutputSupplier;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class NatsServerRunnerTest extends TestBase {

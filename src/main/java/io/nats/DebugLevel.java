@@ -11,23 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nats.io;
+package io.nats;
 
-public class ClusterInsert {
-    public final ClusterNode node;
-    public final String[] configInserts;
+public enum DebugLevel {
+    DEBUG("-D"),                 // Enable debugging output
+    TRACE("-V"),                 // Trace the raw protocol
+    VERBOSE_TRACE("-VV"),        // Verbose trace (traces system account as well)
+    DEBUG_TRACE("-DV"),          // Debug and trace
+    DEBUG_VERBOSE_TRACE("-DVV"); // Debug and verbose trace (traces system account as well)
 
-    public ClusterInsert(ClusterNode node, String[] configInserts) {
-        this.node = node;
-        this.configInserts = configInserts == null || configInserts.length == 0 ? null : configInserts;
+    private final String cmdOption;
+
+    DebugLevel(String cmdOption) {
+        this.cmdOption = cmdOption;
     }
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        for (String s : configInserts) {
-            sb.append(s).append("\r\n");
-        }
-        return sb.toString();
+    public String getCmdOption() {
+        return cmdOption;
     }
 }
