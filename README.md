@@ -4,6 +4,8 @@
 
 Run the [NATS messaging system](https://nats.io) Server from your Java code. 
 
+**Current Release**: 2.0.0 &nbsp; **Current Snapshot**: 2.0.1-SNAPSHOT
+
 [![License Apache 2](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.nats/jnats-server-runner/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.nats/jnats-server-runner)
 [![Javadoc](http://javadoc.io/badge/io.nats/jnats-server-runner.svg?branch=main)](http://javadoc.io/doc/io.nats/jnats-server-runner?branch=main)
@@ -64,9 +66,9 @@ catch (Exception e) {
 
 ### Static Settings
 
-If you want to run multiple instances of the server, for instance in unit tests, you can do
+If you want to run multiple instances of the server, for instance, in unit tests, you can do
 some setup statically to reduce the code in the builders. A simple way to do this would be
-to have a static initializer in base test class or something that is called before all uses.
+to have a static initializer in a base test class or something that is called before all uses.
 There are 3 methods available:
 
 ```java
