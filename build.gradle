@@ -11,7 +11,7 @@ plugins {
     id 'signing'
 }
 
-def jarVersion = "2.0.1"
+def jarVersion = "2.0.2"
 group = 'io.nats'
 
 def isMerge = System.getenv("BUILD_EVENT") == "push"
