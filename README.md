@@ -75,7 +75,7 @@ There are 3 methods available:
 static {
     NatsServerRunner.setDefaultOutputSupplier(ConsoleOutput::new);
     NatsServerRunner.setDefaultOutputLevel(Level.WARNING);
-    NatsServerRunner.setPreferredServerPath("/path/to/nats-server")
+    NatsServerRunner.setPreferredServerPath("/path/to/nats-server");
 }
 ```
 
