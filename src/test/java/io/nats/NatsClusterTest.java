@@ -34,7 +34,7 @@ public class NatsClusterTest extends TestBase {
     private void _testCreateCluster(List<ClusterInsert> clusterInserts, boolean js) throws Exception {
         for (ClusterInsert ci : clusterInserts) {
             String s = ci.toString();
-            assertTrue(s.contains("port:" + ci.node.port));
+            assertTrue(s.contains("port: " + ci.node.port));
             assertTrue(s.contains("server_name=" + DEFAULT_SERVER_NAME_PREFIX));
             assertTrue(s.contains("listen: " + DEFAULT_HOST + ":" + ci.node.listen));
             assertTrue(s.contains("name: " + DEFAULT_CLUSTER_NAME));
