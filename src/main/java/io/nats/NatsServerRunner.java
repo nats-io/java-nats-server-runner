@@ -346,16 +346,22 @@ public class NatsServerRunner implements AutoCloseable {
         try {
             _configFile = File.createTempFile(CONF_FILE_PREFIX, CONF_FILE_EXT);
             BufferedWriter writer = new BufferedWriter(new FileWriter(_configFile));
+            boolean portAlreadyDone;
             if (b.configFilePath == null) {
                 _ports.put(NATS_PORT_KEY, userPort);
                 writePortLine(writer, userPort);
+                portAlreadyDone = true;
             }
             else {
                 processSuppliedConfigFile(writer, b.configFilePath);
+                portAlreadyDone = _ports.get(NATS_PORT_KEY) != -1;
             }
 
             if (b.configInserts != null) {
                 for (String s : b.configInserts) {
+                    if (portAlreadyDone && s.startsWith("port:")) {
+                        continue;
+                    }
                     writeLine(writer, s);
                 }
             }

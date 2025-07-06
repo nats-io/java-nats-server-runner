@@ -284,9 +284,9 @@ public abstract class NatsRunnerUtils {
         List<ClusterInsert> inserts = new ArrayList<>();
         for (ClusterNode node : nodes) {
             List<String> lines = new ArrayList<>();
-            lines.add("port:" + node.port);
+            lines.add("port: " + node.port);
             if (node.monitor != null) {
-                lines.add("http:" + node.monitor);
+                lines.add("http: " + node.monitor);
             }
             if (node.jsStoreDir != null) {
                 String dir = node.jsStoreDir.toString();
