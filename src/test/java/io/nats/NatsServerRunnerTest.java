@@ -13,11 +13,13 @@
 package io.nats;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -31,6 +33,7 @@ import static io.nats.NatsServerRunner.DefaultLoggingSupplier;
 import static io.nats.NatsServerRunner.getDefaultOutputSupplier;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Isolated
 public class NatsServerRunnerTest extends TestBase {
 
     private static Stream<Arguments> debugAndJetStreamArgs() {
@@ -386,9 +389,38 @@ public class NatsServerRunnerTest extends TestBase {
             .output(new ConsoleOutput())
             .build())
         {
+            fail("Config was bad, should have exceptioned.");
         }
         catch (Exception e) {
             assertTrue(e.getMessage().contains("nats-server: Parse error on line 2"));
+        }
+    }
+
+    @Test
+    public void testBuilderPortTakesPrecedence() throws Exception {
+        String[] configInserts = new String[] {"port:4777"};
+
+        NatsServerRunner.Builder b = NatsServerRunner.builder()
+            .debug(false)
+            .jetstream(true)
+            .configInserts(configInserts)
+            .port(4242)
+            .connectCheckTries(0)
+            ;
+
+        try (NatsServerRunner runner = b.build()) {
+            List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
+            int portCount = 0;
+            int portFound = -1;
+            for (String line : lines) {
+                if (line.startsWith("port:")) {
+                    portCount++;
+                    portFound = Integer.parseInt(line.substring(5).trim());
+                }
+            }
+            assertEquals(4242, runner.getPort());
+            assertEquals(1, portCount);
+            assertEquals(4242, portFound);
         }
     }
 }

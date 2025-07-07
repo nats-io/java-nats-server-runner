@@ -14,6 +14,7 @@
 package io.nats;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.List;
 import static io.nats.NatsRunnerUtils.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Isolated
 public class NatsClusterTest extends TestBase {
 
     @Test
