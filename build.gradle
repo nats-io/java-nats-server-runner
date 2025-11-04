@@ -1,3 +1,5 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id("java")
     id("java-library")
@@ -12,7 +14,6 @@ plugins {
 def jarVersion = "2.1.0"
 group = 'io.nats'
 
-def isMerge = System.getenv("BUILD_EVENT") == "push"
 def isRelease = System.getenv("BUILD_EVENT") == "release"
 
 // version is the variable the build actually uses.
@@ -25,16 +26,44 @@ java {
 
 repositories {
     mavenCentral()
-    maven { url="https://oss.sonatype.org/content/repositories/releases/" }
+    maven { url="https://repo1.maven.org/maven2/" }
+    maven { url="https://central.sonatype.com/repository/maven-snapshots/" }
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
-    testImplementation 'nl.jqno.equalsverifier:equalsverifier:3.12.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.14.1'
+    testImplementation 'nl.jqno.equalsverifier:equalsverifier:4.2.1'
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.register('bundle', Bundle) {
+    from sourceSets.main.output
+}
+
+jar {
+    bundle {
+        bnd("Bundle-Name": "io.nats.jnats.server.runner",
+                "Bundle-Vendor": "nats.io",
+                "Bundle-Description": "NATS.IO Java Server Runner",
+                "Bundle-DocURL": "https://github.com/nats-io/java-nats-server-runner"
+        )
+    }
 }
 
 test {
     useJUnitPlatform()
+    testLogging {
+        exceptionFormat = 'full'
+        events "started", "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    retry {
+        failOnPassedAfterRetry = false
+        maxFailures = 4
+        maxRetries = 4
+    }
+    systemProperty 'junit.jupiter.execution.timeout.default', '3m'
 }
 
 javadoc {
@@ -67,23 +96,15 @@ jacocoTestReport {
         xml.required = true // coveralls plugin depends on xml format report
         html.required = true
     }
-    afterEvaluate { // only report on main library not examples
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it,
-                    exclude: ['**/examples**'])
-        }))
-    }
 }
 
-if (isMerge || isRelease) {
-    nexusPublishing {
-        repositories {
-            sonatype {
-                nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
-                snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
-                username = System.getenv('OSSRH_USERNAME')
-                password = System.getenv('OSSRH_PASSWORD')
-            }
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
+            username = System.getenv('OSSRH_USERNAME')
+            password = System.getenv('OSSRH_PASSWORD')
         }
     }
 }
