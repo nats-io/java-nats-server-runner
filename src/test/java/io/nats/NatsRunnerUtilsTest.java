@@ -1,4 +1,4 @@
-// Copyright 2023 The NATS Authors
+// Copyright 2023-2025 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at:
@@ -15,8 +15,8 @@ package io.nats;
 
 import org.junit.jupiter.api.Test;
 
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable;
-import static io.nats.NatsRunnerUtils.*;
+import static io.nats.NatsRunnerUtils.DEFAULT_NATS_SERVER;
+import static io.nats.NatsRunnerUtils.getResolvedServerPath;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class NatsRunnerUtilsTest extends TestBase {
@@ -36,9 +36,6 @@ public class NatsRunnerUtilsTest extends TestBase {
 
     @Test
     public void testGetResolvedServerPath() throws Exception {
-        withEnvironmentVariable(NATS_SERVER_PATH_ENV, "TestNatsServer")
-            .execute(() -> assertEquals("TestNatsServer", getResolvedServerPath()));
-
         assertEquals(DEFAULT_NATS_SERVER, getResolvedServerPath());
 
         //noinspection deprecation

@@ -1,4 +1,4 @@
-// Copyright 2020-2023 The NATS Authors
+// Copyright 2020-2025 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at:
@@ -14,8 +14,8 @@
 package io.nats;
 
 import java.io.*;
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
@@ -34,6 +34,8 @@ import static io.nats.NatsRunnerUtils.*;
  * Server Runner
  */
 public class NatsServerRunner implements AutoCloseable {
+
+    public static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"9.99.9\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
     public static final String ERROR_NOTE_PART_1 = "Make sure that the nats-server is installed and in your PATH.";
     public static final String ERROR_NOTE_PART_2 = "See https://github.com/nats-io/nats-server for information on installation";
     public static long DEFAULT_PROCESS_CHECK_WAIT = 100;
@@ -410,7 +412,6 @@ public class NatsServerRunner implements AutoCloseable {
             }
             while (!process.isAlive() && --tries > 0);
 
-            SocketAddress addr = new InetSocketAddress("localhost", _ports.get(NATS_PORT_KEY));
             SocketChannel socketChannel = SocketChannel.open();
             socketChannel.configureBlocking(true);
             if (connCheckTries > 0) {
@@ -418,10 +419,10 @@ public class NatsServerRunner implements AutoCloseable {
                 tries = connCheckTries;
                 do {
                     try {
-                        socketChannel.connect(addr);
+                        connect(_ports.get(NATS_PORT_KEY), connCheckWait);
                         checking = false;
                     }
-                    catch (ConnectException e) {
+                    catch (RuntimeException e) {
                         if (--tries == 0) {
                             throw e;
                         }
@@ -435,15 +436,23 @@ public class NatsServerRunner implements AutoCloseable {
             _displayOut.info("%%% Started [" + _cmdLine + "]");
             nol.endStartupPhase();
         }
-        catch (IOException ex) {
-            _displayOut.error("%%% Failed to run [" + _cmdLine + "]");
+        catch (Exception ex) {
+            StringBuilder exMessage = new StringBuilder("Failed to run [").append(_cmdLine).append("]");
+
+            _displayOut.error("%%% " + exMessage);
+            _displayOut.error("%%% " + ERROR_NOTE_PART_1);
+            _displayOut.error("%%% " + ERROR_NOTE_PART_2);
+
             String exMsg = ex.getMessage();
             if (exMsg != null) {
                 _displayOut.error("    " + ex.getMessage());
             }
-            _displayOut.error("%%% " + ERROR_NOTE_PART_1);
-            _displayOut.error("%%% " + ERROR_NOTE_PART_2);
-            StringBuilder exMessage = new StringBuilder("Failed to run [").append(_cmdLine).append("]");
+            StackTraceElement[] elements = ex.getStackTrace();
+            for (StackTraceElement element : elements) {
+                _displayOut.error("    " + element);
+                exMessage.append(System.lineSeparator()).append(element);
+            }
+
             if (b.fullErrorReportOnStartup) {
                 if (nol != null) {
                     for (String line : nol.getStartupLines()) {
@@ -468,6 +477,48 @@ public class NatsServerRunner implements AutoCloseable {
                 }
             }
             throw new IllegalStateException(exMessage.toString());
+        }
+    }
+
+    public static void connect(int port, long connCheckWait) {
+        try (Socket socket = new Socket()) {
+            SocketAddress socketAddress = new InetSocketAddress("127.0.0.1", port);
+            socket.connect(socketAddress);
+
+            OutputStream os = socket.getOutputStream();
+            os.write(CONNECT_BYTES);
+            os.flush();
+
+            InputStream in = socket.getInputStream();
+            // give the server time to be read and respond
+            try {
+                Thread.sleep(connCheckWait);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+
+            StringBuilder sb = new StringBuilder();
+            int cr = 0;
+            int i = in.read();
+            while (i != -1) {
+                sb.append((char) i);
+                if (i == 13) {
+                    cr++;
+                }
+                i = (cr > 1) ? -1 : in.read();
+            }
+            in.close();
+
+            String sbs = sb.toString();
+            System.out.println("!!! " + sbs);
+            if (!sbs.contains("INFO") || !sbs.contains("\"port\":" + port)) {
+                throw new RuntimeException("Invalid Server Info: " + sbs);
+            }
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

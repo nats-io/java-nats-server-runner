@@ -1,17 +1,15 @@
-import org.gradle.internal.os.OperatingSystem
-
 plugins {
-    id 'java'
-    id 'java-library'
-    id 'maven-publish'
-    id 'jacoco'
-    id 'com.github.kt3k.coveralls' version '2.12.0'
-    id "org.gradle.test-retry" version "1.1.9"
-    id 'io.github.gradle-nexus.publish-plugin' version '1.1.0'
-    id 'signing'
+    id("java")
+    id("java-library")
+    id("maven-publish")
+    id("jacoco")
+    id("biz.aQute.bnd.builder") version "7.1.0"
+    id("org.gradle.test-retry") version "1.6.4"
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+    id("signing")
 }
 
-def jarVersion = "2.0.2"
+def jarVersion = "2.1.0"
 group = 'io.nats'
 
 def isMerge = System.getenv("BUILD_EVENT") == "push"
@@ -27,12 +25,11 @@ java {
 
 repositories {
     mavenCentral()
-    maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+    maven { url="https://oss.sonatype.org/content/repositories/releases/" }
 }
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
-    testImplementation 'com.github.stefanbirkner:system-lambda:1.2.1'
     testImplementation 'nl.jqno.equalsverifier:equalsverifier:3.12.3'
 }
 
@@ -45,41 +42,30 @@ javadoc {
     source = sourceSets.main.allJava
     title = "NATS.IO Java Server Runner"
     classpath = sourceSets.main.runtimeClasspath
-    doLast {
-        if (!OperatingSystem.current().isWindows()) {
-            exec {
-                println "Updating favicon on all html files"
-                workingDir 'build/docs/javadoc'
-                // Only on linux, mac at this point
-                commandLine 'find', '.', '-name', '*.html', '-exec', 'sed', '-i', '-e', 's#<head>#<head><link rel="icon" type="image/ico" href="favicon.ico">#', '{}', ';'
-            }
-            copy {
-                println "Copying images to javadoc folder"
-                from 'src/main/javadoc/images'
-                into 'build/docs/javadoc'
-            }
-        }
-    }
 }
 
-task javadocJar(type: Jar) {
+tasks.register('javadocJar', Jar) {
     archiveClassifier.set('javadoc')
     from javadoc
 }
 
-task sourcesJar(type: Jar) {
+tasks.register('sourcesJar', Jar) {
     archiveClassifier.set('sources')
     from sourceSets.main.allSource
 }
 
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
 jacoco {
-    toolVersion = "0.8.6"
+    toolVersion = "0.8.12"
 }
 
 jacocoTestReport {
     reports {
-        xml.enabled = true // coveralls plugin depends on xml format report
-        html.enabled = true
+        xml.required = true // coveralls plugin depends on xml format report
+        html.required = true
     }
     afterEvaluate { // only report on main library not examples
         classDirectories.setFrom(files(classDirectories.files.collect {
@@ -87,10 +73,6 @@ jacocoTestReport {
                     exclude: ['**/examples**'])
         }))
     }
-}
-
-artifacts {
-    archives javadocJar, sourcesJar
 }
 
 if (isMerge || isRelease) {
@@ -113,11 +95,11 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
             pom {
-                name = rootProject.name
-                packaging = 'jar'
+                name = "jnats-server-runner"
+                packaging = "jar"
                 groupId = group
-                artifactId = archivesBaseName
-                description = 'Java NATS.io server runner.'
+                artifactId = "jnats-server-runner"
+                description = "Java NATS.io server runner."
                 url = 'https://github.com/nats-io/java-nats-server-runner'
                 licenses {
                     license {
