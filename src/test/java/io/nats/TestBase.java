@@ -1,4 +1,4 @@
-// Copyright 2022 The NATS Authors
+// Copyright 2022-2025 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at:
@@ -14,26 +14,20 @@ package io.nats;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 
 import static io.nats.NatsRunnerUtils.JETSTREAM_OPTION;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.platform.commons.util.CollectionUtils.toUnmodifiableList;
 
 public class TestBase {
 
     protected static final String SOURCE_CONFIG_FILE_PATH = "src/test/resources/";
-
-    protected static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"9.99.9\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
 
     static {
         NatsServerRunner.setDefaultOutputLevel(Level.WARNING);
@@ -86,49 +80,19 @@ public class TestBase {
     }
 
     protected static List<String> getConfigLinesRemoveEmpty(NatsServerRunner runner) throws IOException {
-        //noinspection resource
-        List<String> lines = Files.lines(new File(runner.getConfigFile()).toPath())
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .collect(toUnmodifiableList());
-        return lines;
+        try (Stream<String> stream = Files.lines(new File(runner.getConfigFile()).toPath())) {
+            return stream.map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(toUnmodifiableList());
+        }
     }
 
-    protected void connect(NatsServerRunner runner) throws IOException {
-        connect(runner.getNatsPort());
-    }
-
-    protected void connect(int port) throws IOException {
-        Socket socket = new Socket();
-        SocketAddress socketAddress = new InetSocketAddress("127.0.0.1", port);
-        socket.connect(socketAddress);
-        assertEquals(port, socket.getPort());
-
-        socket.getOutputStream().write(CONNECT_BYTES);
-        socket.getOutputStream().flush();
-
-        InputStream in = socket.getInputStream();
-        // give the server time to respond or this flaps
+    protected void connect(NatsServerRunner runner) {
         try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            // ignore
+            NatsServerRunner.connect(runner.getNatsPort(), 100);
         }
-
-        StringBuilder sb = new StringBuilder();
-        int cr = 0;
-        int i = in.read();
-        while (i != -1) {
-            sb.append((char)i);
-            if (i == 13) {
-                cr++;
-            }
-            i = (cr > 1) ? -1 : in.read();
+        catch (RuntimeException e) {
+            fail();
         }
-        in.close();
-
-        String sbs = sb.toString().trim();
-        assertTrue(sbs.startsWith("INFO"));
-        assertTrue(sbs.contains("\"port\":" + port));
     }
 }
