@@ -15,6 +15,7 @@ package io.nats;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -145,8 +146,11 @@ public class NatsRunnerUtilsTest extends TestBase {
             if (jsStoreDir == null) {
                 assertNull(ci.node.jsStoreDir);
             }
-            else {
+            else if (File.separatorChar == '\\') {
                 assertEquals(jsStoreDir + "\\" + port, ci.node.jsStoreDir.toString());
+            }
+            else {
+                assertEquals(jsStoreDir + "/" + port, ci.node.jsStoreDir.toString());
             }
         }
     }
