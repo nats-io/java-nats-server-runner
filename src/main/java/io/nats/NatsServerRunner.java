@@ -512,7 +512,6 @@ public class NatsServerRunner implements AutoCloseable {
             in.close();
 
             String sbs = sb.toString();
-            System.out.println("!!! " + sbs);
             if (!sbs.contains("INFO") || !sbs.contains("\"port\":" + port)) {
                 throw new RuntimeException("Invalid Server Info: " + sbs);
             }
