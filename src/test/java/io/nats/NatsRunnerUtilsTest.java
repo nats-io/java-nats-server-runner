@@ -27,12 +27,6 @@ import static org.junit.jupiter.api.Assertions.*;
 public class NatsRunnerUtilsTest extends TestBase {
 
     @Test
-    public void testGetUriForPort() {
-        //noinspection deprecation
-        assertEquals("nats://localhost:1234", NatsRunnerUtils.getURIForPort(1234));
-    }
-
-    @Test
     public void testGetNatsLocalhostUri() {
         assertEquals("nats://localhost:1234", NatsRunnerUtils.getNatsLocalhostUri(1234));
     }
@@ -56,14 +50,6 @@ public class NatsRunnerUtilsTest extends TestBase {
 
     @Test
     public void testGetResolvedServerPath() {
-        assertEquals(DEFAULT_NATS_SERVER, getResolvedServerPath());
-
-        //noinspection deprecation
-        NatsRunnerUtils.setServerPath("SetNatsServer");
-        assertEquals("SetNatsServer", getResolvedServerPath());
-
-        //noinspection deprecation
-        NatsRunnerUtils.clearServerPath();
         assertEquals(DEFAULT_NATS_SERVER, getResolvedServerPath());
     }
 

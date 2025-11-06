@@ -483,6 +483,7 @@ public class NatsServerRunnerTest extends TestBase {
     @Test
     public void testBuilder() {
         Path p = Paths.get(".");
+        //noinspection deprecation
         NatsServerRunner.Builder builder = NatsServerRunner.builder()
             .port(1)
             .debugLevel(DebugLevel.DEBUG_VERBOSE_TRACE)
@@ -509,15 +510,14 @@ public class NatsServerRunnerTest extends TestBase {
             .output(null)
             .processCheckWait(11L)
             .processCheckTries(12)
-            .connectCheckWait(13L)
-            .connectCheckTries(14)
+            .connectValidateInitialDelay(14L)
+            .connectValidateSubsequentDelay(15L)
             ;
 
         assertNull(builder.output);
         assertEquals(11L, builder.processCheckWait);
         assertEquals(12, builder.processCheckTries);
-        assertEquals(13L, builder.connectCheckWait);
-        assertEquals(14, builder.connectCheckTries);
+        assertEquals(15L, builder.connectValidateSubsequentDelay);
 
         validateOptions(p, false, new NatsServerRunnerOptionsImpl(builder));
         validateOptions(p, false, NatsServerRunner.builder().runnerOptions(new NatsServerRunnerOptionsImpl(builder)).buildOptions());
@@ -617,7 +617,7 @@ public class NatsServerRunnerTest extends TestBase {
             .jetstream(true)
             .configInserts(configInserts)
             .port(4242)
-            .connectCheckTries(0)
+            .connectValidateTries(0)
             ;
 
         try (NatsServerRunner runner = b.build()) {
@@ -634,5 +634,18 @@ public class NatsServerRunnerTest extends TestBase {
             assertEquals(1, portCount);
             assertEquals(4242, portFound);
         }
+    }
+
+    @Test
+    public void testTlsFirst() throws Exception {
+        NatsServerRunner runner = NatsServerRunner.builder()
+            .configFilePath("src/test/resources/tls_first.conf")
+            .connectValidateTlsFirstMode()
+            .build();
+        runner.shutdown();
+
+        assertThrows(IllegalStateException.class, () -> NatsServerRunner.builder()
+            .configFilePath("src/test/resources/tls_first.conf")
+            .build());
     }
 }
