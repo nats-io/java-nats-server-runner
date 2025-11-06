@@ -55,17 +55,6 @@ public abstract class NatsRunnerUtils {
     private NatsRunnerUtils() {}
 
     /**
-     * Build a standard nats://localhost:port uri
-     * @param port the port
-     * @return the uri
-     * @deprecated Use {@link #getNatsLocalhostUri(int)} instead.
-     */
-    @Deprecated
-    public static String getURIForPort(int port) {
-        return getUri(NATS, LOCALHOST, port);
-    }
-
-    /**
      * Build a nats://localhost:port uri
      * @param port the port
      * @return the uri
@@ -103,25 +92,6 @@ public abstract class NatsRunnerUtils {
      */
     public static String getUri(String schema, String host, int port) {
         return schema + "://" + host + ":" + port;
-    }
-
-    /**
-     * Set the path for the server. Will be used if {@value #NATS_SERVER_PATH_ENV} environment variable is not set.
-     * @deprecated Use {@link NatsServerRunner#setPreferredServerPath} instead
-     * @param serverPath the fully qualified path of the server
-     */
-    @Deprecated
-    public static void setServerPath(String serverPath) {
-        NatsServerRunner.setPreferredServerPath(serverPath);
-    }
-
-    /**
-     * Clear the default path for the server.
-     * @deprecated Use {@link NatsServerRunner#clearPreferredServerPath} instead
-     */
-    @Deprecated
-    public static void clearServerPath() {
-        NatsServerRunner.clearPreferredServerPath();
     }
 
     /**

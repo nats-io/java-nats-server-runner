@@ -20,7 +20,6 @@ Useful for running unit or integration tests on the localhost.
 By default, the server is found in your path in this order: 
 - the `executablePath` set in the builder 
 - the path found in the `nats_server_path` environment variable
-- the path set via `NatsRunnerUtils.setServerPath` (deprecated, prefer setting in builder)
 - `nats-server` somewhere in the machine's path.
 
 For simple setup, constructors work well 

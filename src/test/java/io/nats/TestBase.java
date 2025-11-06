@@ -31,6 +31,7 @@ public class TestBase {
 
     static {
         NatsServerRunner.setDefaultOutputLevel(Level.WARNING);
+
     }
 
     protected void validateBasics(NatsServerRunner runner, boolean debug, boolean jetStream) throws IOException {
@@ -71,16 +72,25 @@ public class TestBase {
 
     protected void validateConfigLines(NatsServerRunner runner, List<String> expected) throws IOException {
         List<String> lines = getConfigLinesRemoveEmpty(runner);
-        assertTrue(lines.contains("port: " + runner.getPort()));
-        if (expected != null) {
-            for (String ex : expected) {
-                assertTrue(lines.contains(ex));
+        if (lines == null) {
+            assertTrue(runner.getCmdLine().contains("port " + runner.getPort()));
+        }
+        else {
+            assertTrue(lines.contains("port: " + runner.getPort()));
+            if (expected != null) {
+                for (String ex : expected) {
+                    assertTrue(lines.contains(ex));
+                }
             }
         }
     }
 
     protected static List<String> getConfigLinesRemoveEmpty(NatsServerRunner runner) throws IOException {
-        try (Stream<String> stream = Files.lines(new File(runner.getConfigFile()).toPath())) {
+        String cfg = runner.getConfigFile();
+        if (cfg == null) {
+            return null;
+        }
+        try (Stream<String> stream = Files.lines(new File(cfg).toPath())) {
             return stream.map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(toUnmodifiableList());
@@ -89,9 +99,10 @@ public class TestBase {
 
     protected void connect(NatsServerRunner runner) {
         try {
-            NatsServerRunner.connect(runner.getNatsPort(), 100);
+            Thread.sleep(100);
+            NatsServerRunner.connectCheck(runner.getNatsPort());
         }
-        catch (RuntimeException e) {
+        catch (IOException | InterruptedException e) {
             fail();
         }
     }

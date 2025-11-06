@@ -17,7 +17,6 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,13 +34,9 @@ import static io.nats.NatsRunnerUtils.*;
  */
 public class NatsServerRunner implements AutoCloseable {
 
-    public static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"9.99.9\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
-    public static final String ERROR_NOTE_PART_1 = "Make sure that the nats-server is installed and in your PATH.";
-    public static final String ERROR_NOTE_PART_2 = "See https://github.com/nats-io/nats-server for information on installation";
-    public static long DEFAULT_PROCESS_CHECK_WAIT = 100;
-    public static int DEFAULT_PROCESS_CHECK_TRIES = 10;
-    public static long DEFAULT_RUN_CHECK_WAIT = 100;
-    public static int DEFAULT_RUN_CHECK_TRIES = 3;
+    private static final byte[] CONNECT_BYTES = "CONNECT {\"lang\":\"java\",\"version\":\"9.99.9\",\"protocol\":1,\"verbose\":false,\"pedantic\":false,\"tls_required\":false,\"echo\":true,\"headers\":true,\"no_responders\":true}\r\n".getBytes();
+    private static final String ERROR_NOTE_PART_1 = "Make sure that the nats-server is installed and in your PATH.";
+    private static final String ERROR_NOTE_PART_2 = "See https://github.com/nats-io/nats-server for information on installation";
 
     private final String _executablePath;
     private final Output _displayOut;
@@ -337,42 +332,53 @@ public class NatsServerRunner implements AutoCloseable {
             }
         }
 
-        long procCheckWait = b.processCheckWait == null ? DEFAULT_PROCESS_CHECK_WAIT : b.processCheckWait;
-        int procCheckTries = b.processCheckTries == null ? DEFAULT_PROCESS_CHECK_TRIES : b.processCheckTries;
-        long connCheckWait = b.connectCheckWait == null ? DEFAULT_RUN_CHECK_WAIT : b.connectCheckWait;
-        int connCheckTries = b.connectCheckTries == null ? DEFAULT_RUN_CHECK_TRIES : b.connectCheckTries;
+        long procCheckWait = b.processCheckWait == null ? DefaultProcessCheckWait : b.processCheckWait;
+        int procCheckTries = b.processCheckTries == null ? DefaultProcessCheckTries : b.processCheckTries;
+        int connectValidateTries = b.connectValidateTries == null ? DefaultValidateTries : b.connectValidateTries;
+        boolean connectCheckValidateInfo = b.connectValidateInfo == null || b.connectValidateInfo;
+        long initialValidateDelay = b.connectValidateInitialDelay == null ? DefaultInitialValidateDelay : b.connectValidateInitialDelay;
+        long subsequentValidateDelay = b.connectValidateSubsequentDelay == null ? DefaultSubsequentValidateDelay : b.connectValidateSubsequentDelay;
 
         List<String> cmd = new ArrayList<>();
         cmd.add(_executablePath);
 
         try {
-            _configFile = File.createTempFile(CONF_FILE_PREFIX, CONF_FILE_EXT);
-            BufferedWriter writer = new BufferedWriter(new FileWriter(_configFile));
-            boolean portAlreadyDone;
-            if (b.configFilePath == null) {
-                _ports.put(NATS_PORT_KEY, userPort);
-                writePortLine(writer, userPort);
-                portAlreadyDone = true;
+            if (b.configFilePath == null && b.configInserts == null) {
+                int port = getPort();
+                cmd.add("--port");
+                cmd.add(Integer.toString(port));
+                _configFile = null;
+                _ports.put(NATS_PORT_KEY, port);
             }
             else {
-                processSuppliedConfigFile(writer, b.configFilePath);
-                portAlreadyDone = _ports.get(NATS_PORT_KEY) != -1;
-            }
-
-            if (b.configInserts != null) {
-                for (String s : b.configInserts) {
-                    if (portAlreadyDone && s.startsWith("port:")) {
-                        continue;
-                    }
-                    writeLine(writer, s);
+                _configFile = File.createTempFile(CONF_FILE_PREFIX, CONF_FILE_EXT);
+                BufferedWriter writer = new BufferedWriter(new FileWriter(_configFile));
+                boolean portAlreadyDone;
+                if (b.configFilePath == null) {
+                    _ports.put(NATS_PORT_KEY, userPort);
+                    writePortLine(writer, userPort);
+                    portAlreadyDone = true;
                 }
+                else {
+                    processSuppliedConfigFile(writer, b.configFilePath);
+                    portAlreadyDone = _ports.get(NATS_PORT_KEY) != -1;
+                }
+
+                if (b.configInserts != null) {
+                    for (String s : b.configInserts) {
+                        if (portAlreadyDone && s.startsWith("port:")) {
+                            continue;
+                        }
+                        writeLine(writer, s);
+                    }
+                }
+
+                writer.flush();
+                writer.close();
+
+                cmd.add(CONFIG_FILE_OPTION_NAME);
+                cmd.add(_configFile.getAbsolutePath());
             }
-
-            writer.flush();
-            writer.close();
-
-            cmd.add(CONFIG_FILE_OPTION_NAME);
-            cmd.add(_configFile.getAbsolutePath());
         }
         catch (IOException ioe) {
             _displayOut.error("%%% Error creating config file: " + ioe);
@@ -412,45 +418,57 @@ public class NatsServerRunner implements AutoCloseable {
             }
             while (!process.isAlive() && --tries > 0);
 
-            SocketChannel socketChannel = SocketChannel.open();
-            socketChannel.configureBlocking(true);
-            if (connCheckTries > 0) {
-                boolean checking = true;
-                tries = connCheckTries;
-                do {
-                    try {
-                        connect(_ports.get(NATS_PORT_KEY), connCheckWait);
-                        checking = false;
+            if (connectValidateTries > 0) {
+                tries = connectValidateTries;
+                while (true) {
+                    if (tries == connectValidateTries) {
+                        sleep(initialValidateDelay);
                     }
-                    catch (RuntimeException e) {
+                    else {
+                        sleep(subsequentValidateDelay);
+                    }
+                    try {
+                        connectCheck(_ports.get(NATS_PORT_KEY), connectCheckValidateInfo);
+                        break;
+                    }
+                    catch (Exception e) {
                         if (--tries == 0) {
                             throw e;
                         }
-                        sleep(connCheckWait);
-                    } finally {
-                        socketChannel.close();
                     }
-                } while (checking);
+                }
             }
 
             _displayOut.info("%%% Started [" + _cmdLine + "]");
             nol.endStartupPhase();
         }
-        catch (Exception ex) {
+        catch (Throwable t) {
             StringBuilder exMessage = new StringBuilder("Failed to run [").append(_cmdLine).append("]");
 
             _displayOut.error("%%% " + exMessage);
             _displayOut.error("%%% " + ERROR_NOTE_PART_1);
             _displayOut.error("%%% " + ERROR_NOTE_PART_2);
 
-            String exMsg = ex.getMessage();
-            if (exMsg != null) {
-                _displayOut.error("    " + ex.getMessage());
+            Throwable cause = t;
+            while (cause.getCause() != null) {
+                cause = cause.getCause();
             }
-            StackTraceElement[] elements = ex.getStackTrace();
+            String causeMsg = cause.getMessage();
+            if (causeMsg != null) {
+                _displayOut.error("    " + causeMsg);
+                exMessage.append(System.lineSeparator()).append(causeMsg);
+            }
+            StackTraceElement[] elements = cause.getStackTrace();
+            boolean canBeDone = false;
             for (StackTraceElement element : elements) {
-                _displayOut.error("    " + element);
-                exMessage.append(System.lineSeparator()).append(element);
+                if (element.getClassName().contains("NatsServerRunner")) {
+                    _displayOut.error("    " + element);
+                    exMessage.append(System.lineSeparator()).append(element);
+                    canBeDone = true;
+                }
+                else if (canBeDone) {
+                    break;
+                }
             }
 
             if (b.fullErrorReportOnStartup) {
@@ -459,7 +477,7 @@ public class NatsServerRunner implements AutoCloseable {
                         exMessage.append(System.lineSeparator()).append(line);
                     }
                 }
-                if (_cmdLine.contains(CONFIG_FILE_OPTION_NAME)) {
+                if (_cmdLine.contains(CONFIG_FILE_OPTION_NAME) && _configFile != null) {
                     String configPath = _configFile.getAbsolutePath();
                     String configSep = getConfigSep(configPath);
                     exMessage.append(System.lineSeparator()).append(configSep);
@@ -476,48 +494,43 @@ public class NatsServerRunner implements AutoCloseable {
                     exMessage.append(System.lineSeparator()).append(configSep);
                 }
             }
+
             throw new IllegalStateException(exMessage.toString());
         }
     }
 
-    public static void connect(int port, long connCheckWait) {
+    public static void connectCheck(int port) throws IOException {
+        connectCheck(port, true);
+    }
+
+    public static void connectCheck(int port, boolean validateInfo) throws IOException {
         try (Socket socket = new Socket()) {
             SocketAddress socketAddress = new InetSocketAddress("127.0.0.1", port);
             socket.connect(socketAddress);
+            try (OutputStream os = socket.getOutputStream()) {
+                os.write(CONNECT_BYTES);
+                os.flush();
 
-            OutputStream os = socket.getOutputStream();
-            os.write(CONNECT_BYTES);
-            os.flush();
+                try (InputStream in = socket.getInputStream()) {
+                    if (validateInfo) {
+                        StringBuilder sb = new StringBuilder();
+                        int cr = 0;
+                        int i = in.read();
+                        while (i != -1) {
+                            sb.append((char) i);
+                            if (i == 13) {
+                                cr++;
+                            }
+                            i = (cr > 1) ? -1 : in.read();
+                        }
 
-            InputStream in = socket.getInputStream();
-            // give the server time to be read and respond
-            try {
-                Thread.sleep(connCheckWait);
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
-            }
-
-            StringBuilder sb = new StringBuilder();
-            int cr = 0;
-            int i = in.read();
-            while (i != -1) {
-                sb.append((char) i);
-                if (i == 13) {
-                    cr++;
+                        String sbs = sb.toString();
+                        if (!sbs.contains("INFO") || !sbs.contains("\"port\":" + port)) {
+                            throw new IOException("Invalid Server Info: '" + sbs + "'");
+                        }
+                    }
                 }
-                i = (cr > 1) ? -1 : in.read();
             }
-            in.close();
-
-            String sbs = sb.toString();
-            if (!sbs.contains("INFO") || !sbs.contains("\"port\":" + port)) {
-                throw new RuntimeException("Invalid Server Info: " + sbs);
-            }
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -624,7 +637,9 @@ public class NatsServerRunner implements AutoCloseable {
         try {
             Thread.sleep(sleep);
         }
-        catch (Exception ignore) {}
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     // ====================================================================================================
@@ -671,7 +686,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @return the path
      */
     public String getConfigFile() {
-        return _configFile.getAbsolutePath();
+        return _configFile == null ? null : _configFile.getAbsolutePath();
     }
 
     /**
@@ -737,8 +752,10 @@ public class NatsServerRunner implements AutoCloseable {
         Level outputLevel;
         Long processCheckWait;
         Integer processCheckTries;
-        Long connectCheckWait;
-        Integer connectCheckTries;
+        Integer connectValidateTries;
+        Boolean connectValidateInfo;
+        Long connectValidateInitialDelay;
+        Long connectValidateSubsequentDelay;
         boolean fullErrorReportOnStartup = true;
 
         public Builder port(Integer port) {
@@ -848,13 +865,28 @@ public class NatsServerRunner implements AutoCloseable {
             return this;
         }
 
-        public Builder connectCheckWait(Long connectCheckWait) {
-            this.connectCheckWait = connectCheckWait;
+        public Builder connectValidateInitialDelay(Long connectValidateInitialDelay) {
+            this.connectValidateInitialDelay = connectValidateInitialDelay;
             return this;
         }
 
-        public Builder connectCheckTries(Integer connectCheckTries) {
-            this.connectCheckTries = connectCheckTries;
+        public Builder connectValidateSubsequentDelay(Long connectValidateSubsequentDelay) {
+            this.connectValidateSubsequentDelay = connectValidateSubsequentDelay;
+            return this;
+        }
+
+        public Builder skipConnectValidate() {
+            this.connectValidateTries = 0;
+            return this;
+        }
+
+        public Builder connectValidateTries(Integer connectValidateTries) {
+            this.connectValidateTries = connectValidateTries;
+            return this;
+        }
+
+        public Builder connectValidateTlsFirstMode() {
+            this.connectValidateInfo = false;
             return this;
         }
 
@@ -893,6 +925,11 @@ public class NatsServerRunner implements AutoCloseable {
     private static Supplier<Output> DefaultOutputSupplier = DefaultLoggingSupplier;
     private static Level DefaultOutputLevel = Level.INFO;
     private static String PreferredServerPath = null;
+    private static long DefaultProcessCheckWait = 100;
+    private static int DefaultProcessCheckTries = 10;
+    private static int DefaultValidateTries = 3;
+    private static long DefaultInitialValidateDelay = 100;
+    private static long DefaultSubsequentValidateDelay = 50;
 
     public static Supplier<Output> getDefaultOutputSupplier() {
         return DefaultOutputSupplier;
@@ -920,5 +957,25 @@ public class NatsServerRunner implements AutoCloseable {
 
     public static void clearPreferredServerPath() {
         PreferredServerPath = null;
+    }
+
+    public static void setDefaultProcessCheckWait(long wait) {
+        DefaultProcessCheckWait = wait;
+    }
+
+    public static void setDefaultProcessCheckTries(int tries) {
+        DefaultProcessCheckTries = tries;
+    }
+
+    public static void setDefaultValidateTries(int tries) {
+        DefaultValidateTries = tries;
+    }
+
+    public static void setDefaultInitialValidateDelay(long delay) {
+        DefaultInitialValidateDelay = delay;
+    }
+
+    public static void setDefaultSubsequentValidateDelay(long delay) {
+        DefaultSubsequentValidateDelay = delay;
     }
 }
