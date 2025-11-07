@@ -4,7 +4,7 @@
 
 Run the [NATS messaging system](https://nats.io) Server from your Java code. 
 
-**Current Release**: 2.1.0 &nbsp; **Current Snapshot**: 2.1.1-SNAPSHOT
+**Current Release**: 3.0.1 &nbsp; **Current Snapshot**: 3.0.2-SNAPSHOT
 
 [![License Apache 2](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.nats/jnats-server-runner/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.nats/jnats-server-runner)
