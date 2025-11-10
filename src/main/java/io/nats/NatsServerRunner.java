@@ -885,6 +885,11 @@ public class NatsServerRunner implements AutoCloseable {
             return this;
         }
 
+        public Builder connectNoValidateInfo() {
+            this.connectValidateInfo = false;
+            return this;
+        }
+
         public Builder connectValidateTlsFirstMode() {
             this.connectValidateInfo = false;
             return this;
