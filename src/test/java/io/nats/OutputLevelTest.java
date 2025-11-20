@@ -18,6 +18,8 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static io.nats.NatsRunnerUtils.setDefaultOutputSupplier;
+
 public class OutputLevelTest extends TestBase {
 
     // RUN THESE TESTS MANUALLY TO SEE THE PROPER SERVER OUTPUT
@@ -32,7 +34,7 @@ public class OutputLevelTest extends TestBase {
     }
 
     private void _test(String label, Supplier<Output> supplier) {
-        NatsServerRunner.setDefaultOutputSupplier(supplier);
+        setDefaultOutputSupplier(supplier);
         System.out.println("\n==============================================================================");
         System.out.println("Test " + label);
         _test(1, "Info",    false, Level.INFO);
@@ -61,7 +63,7 @@ public class OutputLevelTest extends TestBase {
         }
 
         try (NatsServerRunner runner = builder.build()) {
-            connect(runner);
+            validateConnection(runner);
         }
         catch (Exception ignore) {}
     }

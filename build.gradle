@@ -15,13 +15,20 @@ def jarVersion = "3.0.2"
 group = 'io.nats'
 
 def isRelease = System.getenv("BUILD_EVENT") == "release"
+def tc = System.getenv("TARGET_COMPATIBILITY");
+def targetCompat = tc == "21" ? JavaVersion.VERSION_21 : (tc == "17" ? JavaVersion.VERSION_17 : JavaVersion.VERSION_1_8)
+def jarEnd =       tc == "21" ?  "-jdk21"              : (tc == "17" ? "-jdk17"               : "")
+def jarAndArtifactName = "jnats-server-runner" + jarEnd
 
-// version is the variable the build actually uses.
-version = isRelease ? jarVersion : jarVersion + "-SNAPSHOT"
+version = isRelease ? jarVersion : jarVersion + "-SNAPSHOT" // version is the variable the build actually uses.
+
+System.out.println("Java: " + System.getProperty("java.version"))
+System.out.println("Target Compatibility: " + targetCompat)
+System.out.println(group + ":" + jarAndArtifactName + ":" + version)
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = targetCompat
 }
 
 repositories {
@@ -31,6 +38,8 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.jspecify:jspecify:1.0.0'
+
     testImplementation 'org.junit.jupiter:junit-jupiter:5.14.1'
     testImplementation 'nl.jqno.equalsverifier:equalsverifier:4.2.1'
 
@@ -46,7 +55,8 @@ jar {
         bnd("Bundle-Name": "io.nats.jnats.server.runner",
                 "Bundle-Vendor": "nats.io",
                 "Bundle-Description": "NATS.IO Java Server Runner",
-                "Bundle-DocURL": "https://github.com/nats-io/java-nats-server-runner"
+                "Bundle-DocURL": "https://github.com/nats-io/java-nats-server-runner",
+                "Target-Compatibility": "Java " + targetCompat
         )
     }
 }
@@ -67,6 +77,7 @@ test {
 }
 
 javadoc {
+    failOnError = false
     options.overview = 'src/main/javadoc/overview.html' // relative to source root
     source = sourceSets.main.allJava
     title = "NATS.IO Java Server Runner"
@@ -116,11 +127,11 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
             pom {
-                name = "jnats-server-runner"
+                name = jarAndArtifactName
                 packaging = "jar"
                 groupId = group
-                artifactId = "jnats-server-runner"
-                description = "Java NATS.io server runner."
+                artifactId = jarAndArtifactName
+                description = "Java NATS.io Server Runner"
                 url = 'https://github.com/nats-io/java-nats-server-runner'
                 licenses {
                     license {

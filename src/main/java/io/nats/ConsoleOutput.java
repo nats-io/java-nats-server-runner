@@ -74,6 +74,11 @@ public class ConsoleOutput implements Output {
     }
 
     @Override
+    public boolean isConsole() {
+        return true;
+    }
+
+    @Override
     public boolean isLogger() {
         return false;
     }

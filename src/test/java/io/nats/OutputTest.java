@@ -80,10 +80,12 @@ public class OutputTest extends TestBase {
             if (isLogger) {
                 assertTrue(o.isLogger());
                 assertNotNull(o.getLogger());
+                assertFalse(o.isConsole());
             }
             else {
                 assertFalse(o.isLogger());
                 assertNull(o.getLogger());
+                assertTrue(o.isConsole());
             }
         }
     }
@@ -130,6 +132,11 @@ public class OutputTest extends TestBase {
         @Override
         public void info(String msg) {
             infoCount++;
+        }
+
+        @Override
+        public boolean isConsole() {
+            return true;
         }
 
         @Override

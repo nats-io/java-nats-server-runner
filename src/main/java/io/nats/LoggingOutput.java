@@ -60,6 +60,11 @@ public class LoggingOutput implements Output{
     }
 
     @Override
+    public boolean isConsole() {
+        return false;
+    }
+
+    @Override
     public boolean isLogger() {
         return true;
     }

@@ -16,16 +16,24 @@ public class NatsServerRunnerOptionsImpl implements NatsServerRunnerOptions {
     private final Logger logger;
     private final Level logLevel;
 
-    public NatsServerRunnerOptionsImpl(NatsServerRunner.Builder builder) {
-        this.port = builder.ports.get(NatsRunnerUtils.CONFIG_PORT_KEY);
-        this.debugLevel = builder.debugLevel;
-        this.jetstream = builder.jetstream;
-        this.configFilePath = builder.configFilePath;
-        this.configInserts = builder.configInserts;
-        this.customArgs = builder.customArgs;
-        this.executablePath = builder.executablePath;
-        this.logLevel = builder.outputLevel;
-        this.logger = builder.output == null ? null : builder.output.getLogger();
+    public NatsServerRunnerOptionsImpl(Integer port,
+                                       DebugLevel debugLevel,
+                                       boolean jetstream,
+                                       Path configFilePath,
+                                       List<String> configInserts,
+                                       List<String> customArgs,
+                                       Path executablePath,
+                                       Logger logger,
+                                       Level logLevel) {
+        this.port = port;
+        this.debugLevel = debugLevel;
+        this.jetstream = jetstream;
+        this.configFilePath = configFilePath;
+        this.configInserts = configInserts;
+        this.customArgs = customArgs;
+        this.executablePath = executablePath;
+        this.logger = logger;
+        this.logLevel = logLevel;
     }
 
     @Override

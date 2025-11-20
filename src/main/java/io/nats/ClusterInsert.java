@@ -13,17 +13,38 @@
 
 package io.nats;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Object that represents the lines needed to add to the conf for a custer instance
+ */
 public class ClusterInsert {
+    /**
+     * The node
+     */
     public final ClusterNode node;
+
+    /**
+     * The actual inserts
+     */
     public final String[] configInserts;
 
-    public ClusterInsert(ClusterNode node, String[] configInserts) {
+    /**
+     * Construct a ClusterInsert
+     * @param node the node
+     * @param configInserts the inserts
+     */
+    public ClusterInsert(@NonNull ClusterNode node, String @Nullable [] configInserts) {
         this.node = node;
         this.configInserts = configInserts == null || configInserts.length == 0 ? null : configInserts;
     }
 
     @Override
     public String toString() {
+        if (configInserts == null) {
+            return node.toString();
+        }
         StringBuilder sb = new StringBuilder();
         for (String s : configInserts) {
             sb.append(s).append("\r\n");

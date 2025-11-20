@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import static io.nats.NatsRunnerUtils.DEFAULT_NATS_SERVER;
+
 /**
  * Read standard output of process and write lines to given {@link Logger} as INFO;
  * depends on {@link ProcessBuilder#redirectErrorStream(boolean)} being set to {@code true} (since only stdout is
@@ -34,15 +36,15 @@ import java.util.logging.Logger;
  * The use of the input stream is threadsafe since it's used only in a single thread&mdash;the one launched by this
  * code.
  */
-final class NatsOutputLogger implements Runnable {
+final class OutputLogger implements Runnable {
     private final Output output;
-    private final BufferedReader reader;
+    private final Process process;
     private final List<String> startupLines;
     private boolean inStartupPhase;
 
-    private NatsOutputLogger(Output output, Process process) {
+    private OutputLogger(Output output, Process process) {
         this.output = output;
-        this.reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+        this.process = process;
         startupLines = new ArrayList<>();
         inStartupPhase = true;
     }
@@ -64,28 +66,22 @@ final class NatsOutputLogger implements Runnable {
 
     @Override
     public void run() {
-        try {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             try {
                 reader.lines().forEach(this::logInfo);
             } catch (final UncheckedIOException e) {
                 output.warning(() -> "while reading output " + e);
             }
-        } finally {
-            try {
-                reader.close();
-            } catch (final IOException e) {
-                output.warning(() -> "caught i/o exception closing reader" + e);
-            }
+        }
+        catch (IOException e) {
+            output.warning(() -> "caught i/o exception closing reader" + e);
         }
     }
 
-    static NatsOutputLogger logOutput(final Output output, final Process process, final String processName) {
-        final String threadName = (isBlank(processName) ? "unknown" : processName) + ":" + processId(process);
-        NatsOutputLogger nol = new NatsOutputLogger(output, process);
-        final Thread t = new Thread(nol);
-        t.setName(threadName);
-        t.setDaemon(true);
-        t.start();
+    static OutputLogger logOutput(final OutputThreadProvider otp, final Output output, final Process process, String threadName) {
+        String name = (threadName == null ? DEFAULT_NATS_SERVER : threadName) + ":" + processId(process);
+        OutputLogger nol = new OutputLogger(output, process);
+        otp.getOutputThread(name, nol).start();
         return nol;
     }
 
@@ -101,18 +97,5 @@ final class NatsOutputLogger implements Runnable {
         } catch (Exception ignored) {} // NOPMD
 
         return String.format("id(%s)", process.hashCode());
-    }
-
-    private static boolean isBlank(final CharSequence cs) {
-        final int strLen = cs.length();
-        if (strLen == 0) {
-            return true;
-        }
-        for (int i = 0; i < strLen; i++) {
-            if (!Character.isWhitespace(cs.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
     }
 }

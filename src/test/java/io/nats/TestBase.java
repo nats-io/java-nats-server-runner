@@ -21,6 +21,7 @@ import java.util.logging.Level;
 import java.util.stream.Stream;
 
 import static io.nats.NatsRunnerUtils.JETSTREAM_OPTION;
+import static io.nats.NatsRunnerUtils.setDefaultOutputLevel;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.platform.commons.util.CollectionUtils.toUnmodifiableList;
@@ -30,15 +31,14 @@ public class TestBase {
     protected static final String SOURCE_CONFIG_FILE_PATH = "src/test/resources/";
 
     static {
-        NatsServerRunner.setDefaultOutputLevel(Level.WARNING);
-
+        setDefaultOutputLevel(Level.WARNING);
     }
 
     protected void validateBasics(NatsServerRunner runner, boolean debug, boolean jetStream) throws IOException {
         validateCommandLine(runner, debug, jetStream);
         validateHostAndPort(runner);
         validateConfigLines(runner);
-        connect(runner);
+        validateConnection(runner);
     }
 
     protected void validateCommandLine(NatsServerRunner runner, boolean debug, boolean jetStream, String... customArgs) {
@@ -97,12 +97,11 @@ public class TestBase {
         }
     }
 
-    protected void connect(NatsServerRunner runner) {
+    protected void validateConnection(NatsServerRunner runner) {
         try {
-            Thread.sleep(100);
-            NatsServerRunner.connectCheck(runner.getNatsPort());
+            NatsServerRunner.isServerReachable(runner.getNatsPort(), 200);
         }
-        catch (IOException | InterruptedException e) {
+        catch (IOException e) {
             fail();
         }
     }

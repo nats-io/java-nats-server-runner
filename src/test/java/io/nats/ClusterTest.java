@@ -20,27 +20,27 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
-import static io.nats.NatsRunnerUtils.*;
+import static io.nats.ClusterUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Isolated
-public class NatsClusterTest extends TestBase {
+public class ClusterTest extends TestBase {
 
     @Test
     public void testCreateCluster() throws Exception {
         _testCreateCluster(createClusterInserts(), false);
         _testCreateCluster(createClusterInserts(3), false);
-        _testCreateCluster(createClusterInserts(getTemporaryJetStreamStoreDirBase()), true);
-        _testCreateCluster(createClusterInserts(3, getTemporaryJetStreamStoreDirBase()), true);
+        _testCreateCluster(createClusterInserts(createTemporaryJetStreamStoreDirBase()), true);
+        _testCreateCluster(createClusterInserts(3, createTemporaryJetStreamStoreDirBase()), true);
     }
 
     private void _testCreateCluster(List<ClusterInsert> clusterInserts, boolean js) throws Exception {
         for (ClusterInsert ci : clusterInserts) {
             String s = ci.toString();
             assertTrue(s.contains("port: " + ci.node.port));
-            assertTrue(s.contains("server_name=" + DEFAULT_SERVER_NAME_PREFIX));
-            assertTrue(s.contains("listen: " + DEFAULT_HOST + ":" + ci.node.listen));
-            assertTrue(s.contains("name: " + DEFAULT_CLUSTER_NAME));
+            assertTrue(s.contains("server_name=" + getDefaultServerNamePrefix()));
+            assertTrue(s.contains("listen: " + getDefaultClusterHost() + ":" + ci.node.listen));
+            assertTrue(s.contains("name: " + getDefaultClusterName()));
             if (js) {
                 assertTrue(s.contains("jetstream"));
                 assertTrue(s.contains("store_dir="));
@@ -60,18 +60,17 @@ public class NatsClusterTest extends TestBase {
                     validateCommandLine(runner0, false, false);
                     validateHostAndPort(runner0);
                     validateConfigLines(runner0, Collections.singletonList("name: cluster"));
-
-                    connect(runner0);
+                    validateConnection(runner0);
 
                     validateCommandLine(runner1, false, false);
                     validateHostAndPort(runner1);
                     validateConfigLines(runner1, Collections.singletonList("name: cluster"));
-                    connect(runner1);
+                    validateConnection(runner1);
 
                     validateCommandLine(runner2, false, false);
                     validateHostAndPort(runner2);
                     validateConfigLines(runner2, Collections.singletonList("name: cluster"));
-                    connect(runner2);
+                    validateConnection(runner2);
                 }
             }
         }

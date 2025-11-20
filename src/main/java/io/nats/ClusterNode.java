@@ -13,30 +13,59 @@
 
 package io.nats;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.NullUnmarked;
+import org.jspecify.annotations.Nullable;
+
 import java.nio.file.Path;
 
+/**
+ * An object representing a single server node
+ */
+@NullMarked
 public class ClusterNode {
+    /** The name of the cluster */
     public final String clusterName;
+    /** The name of the server */
     public final String serverName;
+    /** The port */
     public final int port;
+    /** The listen port */
     public final int listen;
-    public final String host;
-    public final Integer monitor;
-    public final Path jsStoreDir;
+    /** The host */
+    @Nullable public final String host;
+    /** The monitor port, may be null */
+    @Nullable public final Integer monitor;
+    /** A custom path to use as the JetStream storage directory */
+    @Nullable public final Path jsStoreDir;
 
+    /**
+     * Construct a ClusterNode
+     * @param clusterName the cluster name
+     * @param serverName the server name
+     * @param port the port
+     * @param listen the listen port
+     */
     public ClusterNode(String clusterName, String serverName, int port, int listen) {
         this(clusterName, serverName, null, port, listen, null, null);
     }
 
-    public ClusterNode(String clusterName, String serverName, int port, int listen, Integer monitor) {
+    /**
+     * Construct a ClusterNode
+     * @param clusterName the cluster name
+     * @param serverName the server name
+     * @param port the port
+     * @param listen the listen port
+     */
+    public ClusterNode(String clusterName, String serverName, int port, int listen, @Nullable Integer monitor) {
         this(clusterName, serverName, null, port, listen, monitor, null);
     }
 
-    public ClusterNode(String clusterName, String serverName, int port, int listen, Path jsStoreDir) {
+    public ClusterNode(String clusterName, String serverName, int port, int listen, @Nullable Path jsStoreDir) {
         this(clusterName, serverName, null, port, listen, null, jsStoreDir);
     }
 
-    public ClusterNode(String clusterName, String serverName, String host, int port, int listen, Integer monitor, Path jsStoreDir) {
+    public ClusterNode(String clusterName, String serverName, @Nullable String host, int port, int listen, @Nullable Integer monitor, @Nullable Path jsStoreDir) {
         this.clusterName = clusterName;
         this.serverName = serverName;
         this.host = host;
@@ -46,15 +75,29 @@ public class ClusterNode {
         this.jsStoreDir = jsStoreDir;
     }
 
+    @Override
+    public String toString() {
+        return "ClusterNode{" +
+            "clusterName='" + clusterName + '\'' +
+            ", serverName='" + serverName + '\'' +
+            ", port=" + port +
+            ", listen=" + listen +
+            ", host='" + host + '\'' +
+            ", monitor=" + monitor +
+            ", jsStoreDir=" + jsStoreDir +
+            '}';
+    }
+
     public static Builder builder() {
         return new Builder();
     }
 
+    @NullUnmarked
     public static class Builder {
         private String clusterName;
         private String serverName;
-        private int port;
-        private int listen;
+        private int port = -1;
+        private int listen = -1;
         private String host;
         private Integer monitor;
         private Path jsStoreDir;

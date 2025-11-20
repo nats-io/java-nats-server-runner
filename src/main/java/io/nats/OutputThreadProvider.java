@@ -13,19 +13,11 @@
 
 package io.nats;
 
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-public interface Output {
-    void setLevel(Level level);
-    void error(Supplier<String> msgSupplier);
-    void error(String msg);
-    void warning(Supplier<String> msgSupplier);
-    void warning(String msg);
-    void info(Supplier<String> msgSupplier);
-    void info(String msg);
-    boolean isConsole();
-    boolean isLogger();
-    Logger getLogger();
+public interface OutputThreadProvider {
+    default Thread getOutputThread(String name, Runnable r) {
+        final Thread t = new Thread(r);
+        t.setName(name);
+        t.setDaemon(true);
+        return t;
+    }
 }

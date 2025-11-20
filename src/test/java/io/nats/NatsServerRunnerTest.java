@@ -25,8 +25,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.nats.NatsRunnerUtils.*;
-import static io.nats.NatsServerRunner.DefaultLoggingSupplier;
-import static io.nats.NatsServerRunner.getDefaultOutputSupplier;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("resource")
@@ -207,42 +205,42 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testDebugConstructorNextPortFalse() throws Exception {
-        int port = NatsRunnerUtils.nextPort();
+        int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(false, false, () -> new NatsServerRunner(port, false));
         assertEquals(port, runner.getPort());
     }
 
     @Test
     public void testDebugConstructorNextPortTrue() throws Exception {
-        int port = NatsRunnerUtils.nextPort();
+        int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(true, false, () -> new NatsServerRunner(port, true));
         assertEquals(port, runner.getPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortFalseFalse() throws Exception {
-        int port = NatsRunnerUtils.nextPort();
+        int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(false, false, () -> new NatsServerRunner(port, false, false));
         assertEquals(port, runner.getPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortTrueFalse() throws Exception {
-        int port = NatsRunnerUtils.nextPort();
+        int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(true, false, () -> new NatsServerRunner(port, true, false));
         assertEquals(port, runner.getPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortFalseTrue() throws Exception {
-        int port = NatsRunnerUtils.nextPort();
+        int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(false, true, () -> new NatsServerRunner(port, false, true));
         assertEquals(port, runner.getPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortTrueTrue() throws Exception {
-        int port = NatsRunnerUtils.nextPort();
+        int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(true, true, () -> new NatsServerRunner(port, true, true));
         assertEquals(port, runner.getPort());
     }
@@ -269,7 +267,7 @@ public class NatsServerRunnerTest extends TestBase {
         validateCommandLine(runner, false, false, "--user uuu", "--pass ppp");
         validateHostAndPort(runner);
         validateConfigLines(runner, Arrays.asList(CUSTOMS_CONFIG_INSERTS));
-        connect(runner);
+        validateConnection(runner);
     }
 
     @Test
@@ -335,7 +333,7 @@ public class NatsServerRunnerTest extends TestBase {
         validateHostAndPort(runner);
         validateConfigLines(runner, configFile, configInserts);
         if (checkConnect) {
-            connect(runner);
+            validateConnection(runner);
         }
     }
 
@@ -450,7 +448,7 @@ public class NatsServerRunnerTest extends TestBase {
                         assertEquals(4222, natsPort);
                         break;
                 }
-                connect(runner);
+                validateConnection(runner);
 
                 switch (wsMatch) {
                     case MATCH_USER:
@@ -483,7 +481,6 @@ public class NatsServerRunnerTest extends TestBase {
     @Test
     public void testBuilder() {
         Path p = Paths.get(".");
-        //noinspection deprecation
         NatsServerRunner.Builder builder = NatsServerRunner.builder()
             .port(1)
             .debugLevel(DebugLevel.DEBUG_VERBOSE_TRACE)
@@ -508,21 +505,19 @@ public class NatsServerRunnerTest extends TestBase {
             .executablePath(p.toString())
             .outputLevel(Level.OFF)
             .output(null)
-            .processCheckWait(11L)
-            .processCheckTries(12)
-            .connectValidateInitialDelay(14L)
-            .connectValidateSubsequentDelay(15L)
+            .processStartTries(11)
+            .processStartRetryDelay(12L)
+            .processAliveCheckTries(13)
+            .processAliveCheckWait(14L)
+            .connectValidateTimeout(15L)
             ;
 
         assertNull(builder.output);
-        assertEquals(11L, builder.processCheckWait);
-        assertEquals(12, builder.processCheckTries);
-        assertEquals(15L, builder.connectValidateSubsequentDelay);
 
-        validateOptions(p, false, new NatsServerRunnerOptionsImpl(builder));
-        validateOptions(p, false, NatsServerRunner.builder().runnerOptions(new NatsServerRunnerOptionsImpl(builder)).buildOptions());
         validateOptions(p, false, builder.buildOptions());
-        validateOptions(p, true, new NatsServerRunnerOptionsImpl(builder.outputLogger(Logger.getLogger("testNatsServerRunnerOptionsImpl"))));
+
+        builder.outputLogger(Logger.getLogger("testNatsServerRunnerOptionsImpl"));
+        validateOptions(p, true, builder.buildOptions());
     }
 
     private static void validateOptions(Path p, boolean logger, NatsServerRunnerOptions impl) {
@@ -566,23 +561,23 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testStaticStuff() {
-        Level initial = NatsServerRunner.getDefaultOutputLevel();
-        NatsServerRunner.setDefaultOutputLevel(Level.ALL);
-        assertEquals(Level.ALL, NatsServerRunner.getDefaultOutputLevel());
+        Level initial = getDefaultOutputLevel();
+        setDefaultOutputLevel(Level.ALL);
+        assertEquals(Level.ALL, getDefaultOutputLevel());
 
-        NatsServerRunner.setDefaultOutputLevel(initial);
-        assertEquals(initial, NatsServerRunner.getDefaultOutputLevel());
+        setDefaultOutputLevel(initial);
+        assertEquals(initial, getDefaultOutputLevel());
 
         Supplier<Output> dflt = getDefaultOutputSupplier();
         Supplier<Output> supplier = ConsoleOutput::new;
         assertEquals(dflt, getDefaultOutputSupplier());
         assertNotEquals(supplier, getDefaultOutputSupplier());
 
-        NatsServerRunner.setDefaultOutputSupplier(supplier);
+        setDefaultOutputSupplier(supplier);
         assertNotEquals(dflt, getDefaultOutputSupplier());
         assertEquals(supplier, getDefaultOutputSupplier());
 
-        NatsServerRunner.setDefaultOutputSupplier(null);
+        setDefaultOutputSupplier(null);
         assertEquals(DefaultLoggingSupplier, getDefaultOutputSupplier());
     }
 
@@ -637,15 +632,16 @@ public class NatsServerRunnerTest extends TestBase {
     }
 
     @Test
-    public void testTlsFirst() throws Exception {
-        NatsServerRunner runner = NatsServerRunner.builder()
+    public void testTlsFirst() {
+        try (NatsServerRunner runner = NatsServerRunner.builder()
             .configFilePath("src/test/resources/tls_first.conf")
-            .connectValidateTlsFirstMode()
-            .build();
-        runner.shutdown();
-
-        assertThrows(IllegalStateException.class, () -> NatsServerRunner.builder()
-            .configFilePath("src/test/resources/tls_first.conf")
-            .build());
+//            .skipConnectValidate()
+            .build())
+        {
+            // just wanted to connect
+        }
+        catch (Exception e) {
+            fail(e);
+        }
     }
 }
