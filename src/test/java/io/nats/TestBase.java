@@ -20,8 +20,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Stream;
 
-import static io.nats.NatsRunnerUtils.JETSTREAM_OPTION;
-import static io.nats.NatsRunnerUtils.setDefaultOutputLevel;
+import static io.nats.NatsRunnerUtils.*;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.platform.commons.util.CollectionUtils.toUnmodifiableList;
@@ -52,7 +51,7 @@ public class TestBase {
     protected void validateHostAndPort(NatsServerRunner server) {
         assertTrue(server.getPort() > 0);
         assertTrue(server.getPort() != 1234);
-        assertTrue(server.getURI().startsWith("nats://localhost"));
+        assertTrue(server.getURI().startsWith("nats://" + getDefaultLocalhostHost().host));
     }
 
     protected void validateConfigLines(NatsServerRunner runner) throws IOException {
