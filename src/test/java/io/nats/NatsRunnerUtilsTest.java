@@ -19,10 +19,9 @@ import static io.nats.NatsRunnerUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class NatsRunnerUtilsTest extends TestBase {
-
     @Test
     public void testGetNatsLocalhostUri() {
-        assertEquals("nats://localhost:1234", getNatsLocalhostUri(1234));
+        assertEquals(natsLocalHostFromDefault(1234), getNatsLocalhostUri(1234));
     }
 
     @Test
@@ -32,7 +31,7 @@ public class NatsRunnerUtilsTest extends TestBase {
 
     @Test
     public void testGetLocalhostUri() {
-        assertEquals("schema://localhost:1234", getLocalhostUri("schema", 1234));
+        assertEquals(localHostFromDefault("schema", 1234), getLocalhostUri("schema", 1234));
     }
 
     @Test

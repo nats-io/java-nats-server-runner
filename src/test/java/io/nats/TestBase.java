@@ -33,6 +33,22 @@ public class TestBase {
         setDefaultOutputLevel(Level.WARNING);
     }
 
+    public static String localHostFromDefaultNoPort(String schema) {
+        return schema + "://" + getDefaultLocalhostHost().host;
+    }
+
+    public static String localHostFromDefault(String schema, int port) {
+        return localHostFromDefaultNoPort(schema) + ":" + port;
+    }
+
+    public static String natsLocalHostFromDefaultNoPort() {
+        return "nats://" + getDefaultLocalhostHost().host;
+    }
+
+    public static String natsLocalHostFromDefault(int port) {
+        return natsLocalHostFromDefaultNoPort() + ":" + port;
+    }
+
     protected void validateBasics(NatsServerRunner runner, boolean debug, boolean jetStream) throws IOException {
         validateCommandLine(runner, debug, jetStream);
         validateHostAndPort(runner);
@@ -51,7 +67,7 @@ public class TestBase {
     protected void validateHostAndPort(NatsServerRunner server) {
         assertTrue(server.getPort() > 0);
         assertTrue(server.getPort() != 1234);
-        assertTrue(server.getURI().startsWith("nats://" + getDefaultLocalhostHost().host));
+        assertTrue(server.getURI().startsWith(natsLocalHostFromDefaultNoPort()));
     }
 
     protected void validateConfigLines(NatsServerRunner runner) throws IOException {
