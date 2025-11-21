@@ -67,7 +67,7 @@ public class TestBase {
     protected void validateHostAndPort(NatsServerRunner server) {
         assertTrue(server.getPort() > 0);
         assertTrue(server.getPort() != 1234);
-        assertTrue(server.getURI().startsWith(natsLocalHostFromDefaultNoPort()));
+        assertTrue(server.getNatsLocalhostUri().startsWith(natsLocalHostFromDefaultNoPort()));
     }
 
     protected void validateConfigLines(NatsServerRunner runner) throws IOException {
