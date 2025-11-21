@@ -16,6 +16,7 @@ package io.nats;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
@@ -29,18 +30,18 @@ public class ClusterTest extends TestBase {
     @Test
     public void testCreateCluster() throws Exception {
         _testCreateCluster(createClusterInserts(), false);
-        _testCreateCluster(createClusterInserts(3), false);
+        _testCreateCluster(createClusterInserts(DEFAULT_CLUSTER_DEFAULTS), false);
         _testCreateCluster(createClusterInserts(createTemporaryJetStreamStoreDirBase()), true);
-        _testCreateCluster(createClusterInserts(3, createTemporaryJetStreamStoreDirBase()), true);
+        _testCreateCluster(createClusterInserts(DEFAULT_CLUSTER_DEFAULTS, createTemporaryJetStreamStoreDirBase()), true);
     }
 
     private void _testCreateCluster(List<ClusterInsert> clusterInserts, boolean js) throws Exception {
         for (ClusterInsert ci : clusterInserts) {
             String s = ci.toString();
             assertTrue(s.contains("port: " + ci.node.port));
-            assertTrue(s.contains("server_name=" + getDefaultServerNamePrefix()));
-            assertTrue(s.contains("listen: " + getDefaultClusterHost() + ":" + ci.node.listen));
-            assertTrue(s.contains("name: " + getDefaultClusterName()));
+            assertTrue(s.contains("server_name=" + DEFAULT_CLUSTER_DEFAULTS.getServerNamePrefix()));
+            assertTrue(s.contains("listen: " + DEFAULT_CLUSTER_DEFAULTS.getHost() + ":" + ci.node.listen));
+            assertTrue(s.contains("name: " + DEFAULT_CLUSTER_DEFAULTS.getClusterName()));
             if (js) {
                 assertTrue(s.contains("jetstream"));
                 assertTrue(s.contains("store_dir="));
@@ -97,7 +98,8 @@ public class ClusterTest extends TestBase {
         assertEquals(9999, cn.monitor);
         assertNull(cn.jsStoreDir);
 
-        cn = new ClusterNode("name", "server", 1234, 5678, Paths.get("path"));
+        Path path = Paths.get("path");
+        cn = new ClusterNode("name", "server", 1234, 5678, path);
         assertEquals("name", cn.clusterName);
         assertEquals("server", cn.serverName);
         assertNull(cn.host);
@@ -107,7 +109,7 @@ public class ClusterTest extends TestBase {
         assertNotNull(cn.jsStoreDir);
         assertEquals("path", cn.jsStoreDir.toString());
 
-        cn = new ClusterNode("name", "server", "host", 1234, 5678, 9999, Paths.get("path"));
+        cn = new ClusterNode("name", "server", "host", 1234, 5678, 9999, path);
         assertEquals("name", cn.clusterName);
         assertEquals("server", cn.serverName);
         assertEquals("host", cn.host);
@@ -125,7 +127,7 @@ public class ClusterTest extends TestBase {
             .port(1234)
             .listen(5678)
             .monitor(9999)
-            .jsStoreDir(Paths.get("path"))
+            .jsStoreDir(path)
             .build()
         ;
         assertEquals("name", cn.clusterName);

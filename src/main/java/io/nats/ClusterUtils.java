@@ -22,120 +22,48 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class ClusterUtils {
-    private static String DEFAULT_CLUSTER_HOST = "127.0.0.1";
-    private static int DEFAULT_CLUSTER_PORT_START = 4220;
-    private static int DEFAULT_CLUSTER_LISTEN_START = 4230;
-    private static int DEFAULT_CLUSTER_MONITOR_START = 4280;
+    public static final ClusterDefaults DEFAULT_CLUSTER_DEFAULTS = new ClusterDefaults();
 
-    private static int DEFAULT_CLUSTER_COUNT = 3;
-    private static String DEFAULT_CLUSTER_NAME = "cluster";
-    private static String DEFAULT_SERVER_NAME_PREFIX = "server";
-
-    public static void setDefaultClusterHost(String defaultHost) {
-        DEFAULT_CLUSTER_HOST = defaultHost;
+    private ClusterUtils() {
     }
-
-    public static void setDefaultClusterPortStart(int defaultPortStart) {
-        DEFAULT_CLUSTER_PORT_START = defaultPortStart;
-    }
-
-    public static void setDefaultClusterListenStart(int defaultListenStart) {
-        DEFAULT_CLUSTER_LISTEN_START = defaultListenStart;
-    }
-
-    public static void setDefaultClusterMonitorStart(int defaultMonitorStart) {
-        DEFAULT_CLUSTER_MONITOR_START = defaultMonitorStart;
-    }
-
-    public static void setDefaultClusterCount(int defaultClusterCount) {
-        DEFAULT_CLUSTER_COUNT = defaultClusterCount;
-    }
-
-    public static void setDefaultClusterName(String defaultClusterName) {
-        DEFAULT_CLUSTER_NAME = defaultClusterName;
-    }
-
-    public static void setDefaultServerNamePrefix(String defaultServerNamePrefix) {
-        DEFAULT_SERVER_NAME_PREFIX = defaultServerNamePrefix;
-    }
-
-    public static String getDefaultClusterHost() {
-        return DEFAULT_CLUSTER_HOST;
-    }
-
-    public static int getDefaultClusterPortStart() {
-        return DEFAULT_CLUSTER_PORT_START;
-    }
-
-    public static int getDefaultClusterListenStart() {
-        return DEFAULT_CLUSTER_LISTEN_START;
-    }
-
-    public static int getDefaultClusterMonitorStart() {
-        return DEFAULT_CLUSTER_MONITOR_START;
-    }
-
-    public static int getDefaultClusterCount() {
-        return DEFAULT_CLUSTER_COUNT;
-    }
-
-    public static String getDefaultClusterName() {
-        return DEFAULT_CLUSTER_NAME;
-    }
-
-    public static String getDefaultServerNamePrefix() {
-        return DEFAULT_SERVER_NAME_PREFIX;
-    }
-
-    private ClusterUtils() {}
 
     public static List<ClusterInsert> createClusterInserts() {
-        return createClusterInserts(DEFAULT_CLUSTER_COUNT, DEFAULT_CLUSTER_NAME, DEFAULT_SERVER_NAME_PREFIX, false, null);
+        return createClusterInserts(createNodes());
     }
 
     public static List<ClusterInsert> createClusterInserts(Path jsStoreDirBase) {
-        return createClusterInserts(DEFAULT_CLUSTER_COUNT, DEFAULT_CLUSTER_NAME, DEFAULT_SERVER_NAME_PREFIX, false, jsStoreDirBase);
+        return createClusterInserts(createNodes(jsStoreDirBase));
     }
 
-    public static List<ClusterInsert> createClusterInserts(int count) {
-        return createClusterInserts(count, DEFAULT_CLUSTER_NAME, DEFAULT_SERVER_NAME_PREFIX, false, null);
+    public static List<ClusterInsert> createClusterInserts(ClusterDefaults cd) {
+        return createClusterInserts(createNodes(cd));
     }
 
-    public static List<ClusterInsert> createClusterInserts(int count, Path jsStoreDirBase) {
-        return createClusterInserts(count, DEFAULT_CLUSTER_NAME, DEFAULT_SERVER_NAME_PREFIX, false, jsStoreDirBase);
+    public static List<ClusterInsert> createClusterInserts(ClusterDefaults cd, Path jsStoreDirBase) {
+        return createClusterInserts(createNodes(cd, jsStoreDirBase));
     }
 
-    public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix) {
-        return createClusterInserts(createNodes(count, clusterName, serverNamePrefix, false, null));
+    public static List<ClusterNode> createNodes() {
+        return createNodes(DEFAULT_CLUSTER_DEFAULTS, null);
     }
 
-    public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix, Path jsStoreDirBase) {
-        return createClusterInserts(createNodes(count, clusterName, serverNamePrefix, false, jsStoreDirBase));
+    public static List<ClusterNode> createNodes(Path jsStoreDirBase) {
+        return createNodes(DEFAULT_CLUSTER_DEFAULTS, jsStoreDirBase);
     }
 
-    public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix, boolean monitor) {
-        return createClusterInserts(createNodes(count, clusterName, serverNamePrefix, monitor, null));
+    public static List<ClusterNode> createNodes(ClusterDefaults cd) {
+        return createNodes(cd, null);
     }
 
-    public static List<ClusterInsert> createClusterInserts(int count, String clusterName, String serverNamePrefix, boolean monitor, Path jsStoreDirBase) {
-        return createClusterInserts(createNodes(count, clusterName, serverNamePrefix, monitor, jsStoreDirBase));
-    }
-
-    public static List<ClusterNode> createNodes(int count, String clusterName, String serverNamePrefix, boolean monitor, Path jsStoreDirBase) {
-        return createNodes(count, clusterName, serverNamePrefix, jsStoreDirBase,
-            DEFAULT_CLUSTER_HOST, DEFAULT_CLUSTER_PORT_START, DEFAULT_CLUSTER_LISTEN_START,
-            monitor ? DEFAULT_CLUSTER_MONITOR_START : null);
-    }
-
-    public static List<ClusterNode> createNodes(int count, String clusterName, String serverNamePrefix, Path jsStoreDirBase,
-                                                String host, int portStart, int listenStart, Integer monitorStart) {
+    public static List<ClusterNode> createNodes(ClusterDefaults cd, Path jsStoreDirBase) {
         List<ClusterNode> nodes = new ArrayList<>();
-        for (int x = 0; x < count; x++) {
-            int port = portStart + x;
-            int listen = listenStart + x;
-            Integer monitor = monitorStart == null ? null : monitorStart + x;
+        for (int x = 0; x < cd.getCount(); x++) {
+            int port = cd.getPortStart() + x;
+            int listen = cd.getListenStart() + x;
+            String server = cd.getServerNamePrefix() + x;
+            Integer monitor = cd.hasMonitor() ? cd.getMonitorStart() + x : null;
             Path jsStoreDir = jsStoreDirBase == null ? null : Paths.get(jsStoreDirBase.toString(), "" + port);
-            nodes.add( new ClusterNode(clusterName, serverNamePrefix + x, host, port, listen, monitor, jsStoreDir));
+            nodes.add( new ClusterNode(cd.getClusterName(), server, cd.getHost(), port, listen, monitor, jsStoreDir));
         }
         return nodes;
     }
@@ -167,7 +95,7 @@ public abstract class ClusterUtils {
             lines.add("server_name=" + node.serverName);
             lines.add("cluster {");
             lines.add("  name: " + node.clusterName);
-            String host = node.host == null ? DEFAULT_CLUSTER_HOST : node.host;
+            String host = node.host == null ? DEFAULT_CLUSTER_DEFAULTS.getHost() : node.host;
             lines.add("  listen: " + host + ":" + node.listen);
             lines.add("  routes: [");
             for (ClusterNode routeNode : nodes) {

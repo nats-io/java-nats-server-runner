@@ -668,7 +668,7 @@ public class NatsServerRunner implements AutoCloseable {
      * @return the uri string
      */
     public String getNatsLocalhostUri() {
-        return NatsRunnerUtils.getNatsLocalhostUri(getNatsPort());
+        return NatsRunnerUtils.getNatsLocalhostUri(getPort());
     }
 
     /**

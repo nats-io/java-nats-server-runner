@@ -20,60 +20,52 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static io.nats.ClusterUtils.*;
+import static io.nats.ClusterUtils.DEFAULT_CLUSTER_DEFAULTS;
+import static io.nats.ClusterUtils.createClusterInserts;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ClusterUtilsTest extends TestBase {
 
     @Test
     public void testCreateClusterInserts() {
-        Path t = Paths.get("path");
-        int p = 4220;
-        int l = 4230;
-        int m = 4280;
-        String c = "cluster";
-        String s = "server";
-        String h = "127.0.0.1";
+        Path jsStoreDirBase = Paths.get("path");
+        int p = DEFAULT_CLUSTER_DEFAULTS.getPortStart();
+        int l = DEFAULT_CLUSTER_DEFAULTS.getListenStart();
+        int m = DEFAULT_CLUSTER_DEFAULTS.getMonitorStart();
+        String c = DEFAULT_CLUSTER_DEFAULTS.getClusterName();
+        String s = DEFAULT_CLUSTER_DEFAULTS.getServerNamePrefix();
+        String h = DEFAULT_CLUSTER_DEFAULTS.getHost();
 
-        validateClusterInserts(3, p, l, c, s, h, null, null, createClusterInserts());
-        validateClusterInserts(2, p, l, c, s, h, null, null, createClusterInserts(2));
-        validateClusterInserts(3, p, l, c, s, h, null, t, createClusterInserts(t));
-        validateClusterInserts(2, p, l, c, s, h, null, t, createClusterInserts(2, t));
+        validateClusterInserts(3, p, l, c, s, h, false, m, null, createClusterInserts());
+        validateClusterInserts(3, p, l, c, s, h, false, m, jsStoreDirBase, createClusterInserts(jsStoreDirBase));
 
-        c = "clstr";
-        s = "srvr";
-        validateClusterInserts(2, p, l, c, s, h, null, null, createClusterInserts(2, c, s));
-        validateClusterInserts(2, p, l, c, s, h, null, t, createClusterInserts(2, c, s, t));
-        validateClusterInserts(2, p, l, c, s, h, null, null, createClusterInserts(2, c, s, false));
-        validateClusterInserts(2, p, l, c, s, h, m, null, createClusterInserts(2, c, s, true));
-        validateClusterInserts(2, p, l, c, s, h, null, t, createClusterInserts(2, c, s, false, t));
-        validateClusterInserts(2, p, l, c, s, h, m, t, createClusterInserts(2, c, s, true, t));
+        ClusterDefaults cd = new ClusterDefaults()
+            .count(3)
+            .portStart(p)
+            .listenStart(l)
+            .monitorStart(m)
+            .clusterName(c)
+            .serverNamePrefix(s)
+            .host(h);
+        validateClusterInserts(3, p, l, c, s, h, true, m, null, createClusterInserts(cd));
+        validateClusterInserts(3, p, l, c, s, h, true, m, jsStoreDirBase, createClusterInserts(cd, jsStoreDirBase));
 
         p = 5220;
         l = 5230;
         m = 5280;
-        h = "host";
-        c = "cluster";
-        s = "server";
-
-        setDefaultClusterHost(h);
-        setDefaultClusterPortStart(p);
-        setDefaultClusterListenStart(l);
-        setDefaultClusterMonitorStart(m);
-
-        validateClusterInserts(3, p, l, c, s, h, null, null, createClusterInserts());
-        validateClusterInserts(2, p, l, c, s, h, null, null, createClusterInserts(2));
-        validateClusterInserts(3, p, l, c, s, h, null, t, createClusterInserts(t));
-        validateClusterInserts(2, p, l, c, s, h, null, t, createClusterInserts(2, t));
-
         c = "clstr";
         s = "srvr";
-        validateClusterInserts(2, p, l, c, s, h, null, null, createClusterInserts(2, c, s));
-        validateClusterInserts(2, p, l, c, s, h, null, t, createClusterInserts(2, c, s, t));
-        validateClusterInserts(2, p, l, c, s, h, null, null, createClusterInserts(2, c, s, false));
-        validateClusterInserts(2, p, l, c, s, h, m, null, createClusterInserts(2, c, s, true));
-        validateClusterInserts(2, p, l, c, s, h, null, t, createClusterInserts(2, c, s, false, t));
-        validateClusterInserts(2, p, l, c, s, h, m, t, createClusterInserts(2, c, s, true, t));
+        cd = new ClusterDefaults()
+            .count(2)
+            .portStart(p)
+            .listenStart(l)
+            .monitorStart(m)
+            .clusterName(c)
+            .serverNamePrefix(s)
+            .host(h)
+            .monitorStart(m);
+        validateClusterInserts(2, p, l, c, s, h, true, m, null, createClusterInserts(cd));
+        validateClusterInserts(2, p, l, c, s, h, true, m, jsStoreDirBase, createClusterInserts(cd, jsStoreDirBase));
     }
 
     private static void validateClusterInserts(int count,
@@ -82,7 +74,8 @@ public class ClusterUtilsTest extends TestBase {
                                                String cluster,
                                                String server,
                                                String host,
-                                               Integer baseMonitor,
+                                               boolean hasMonitor,
+                                               int baseMonitor,
                                                Path jsStoreDir,
                                                List<ClusterInsert> list) {
         assertEquals(count, list.size());
@@ -95,11 +88,11 @@ public class ClusterUtilsTest extends TestBase {
             assertEquals(port, ci.node.port);
             assertEquals(listen, ci.node.listen);
             assertEquals(host, ci.node.host);
-            if (baseMonitor == null) {
-                assertNull(ci.node.monitor);
+            if (hasMonitor) {
+                assertEquals(baseMonitor + x, ci.node.monitor);
             }
             else {
-                assertEquals(baseMonitor + x, ci.node.monitor);
+                assertNull(ci.node.monitor);
             }
             if (jsStoreDir == null) {
                 assertNull(ci.node.jsStoreDir);
