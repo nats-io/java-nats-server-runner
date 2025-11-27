@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.nats.NatsRunnerUtils.*;
+import static io.nats.NatsServerRunner.builder;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("resource")
@@ -37,7 +38,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testDefaultBuilder() throws Exception {
-        validateVariousConstructors(false, false, () -> NatsServerRunner.builder().build());
+        validateVariousConstructors(false, false, () -> builder().build());
     }
 
     @Test
@@ -72,29 +73,29 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testDebugJsBuilderFalseFalse() throws Exception {
-        validateVariousConstructors(false, false, () -> NatsServerRunner.builder().debug(false).jetstream(false).build());
+        validateVariousConstructors(false, false, () -> builder().debug(false).jetstream(false).build());
     }
 
     @Test
     public void testDebugJsBuilderTrueFalse() throws Exception {
-        validateVariousConstructors(true, false, () -> NatsServerRunner.builder().debug(true).jetstream(false).build());
+        validateVariousConstructors(true, false, () -> builder().debug(true).jetstream(false).build());
     }
 
     @Test
     public void testDebugJsBuilderFalseTrue() throws Exception {
-        validateVariousConstructors(false, true, () -> NatsServerRunner.builder().debug(false).jetstream(true).build());
+        validateVariousConstructors(false, true, () -> builder().debug(false).jetstream(true).build());
     }
 
     @Test
     public void testDebugJsBuilderTrueTrue() throws Exception {
-        validateVariousConstructors(true, true, () -> NatsServerRunner.builder().debug(true).jetstream(true).build());
+        validateVariousConstructors(true, true, () -> builder().debug(true).jetstream(true).build());
     }
 
     @Test
     public void testDebugJsNewAndBuilderAndBuildOptionsFalseFalse() throws Exception {
         validateVariousConstructors(false, false, () -> {
             try {
-                return new NatsServerRunner(NatsServerRunner.builder().debug(false).jetstream(false).buildOptions());
+                return new NatsServerRunner(builder().debug(false).jetstream(false).buildOptions());
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -106,7 +107,7 @@ public class NatsServerRunnerTest extends TestBase {
     public void testDebugJsNewAndBuilderAndBuildOptionsTrueFalse() throws Exception {
         validateVariousConstructors(true, false, () -> {
             try {
-                return new NatsServerRunner(NatsServerRunner.builder().debug(true).jetstream(false).buildOptions());
+                return new NatsServerRunner(builder().debug(true).jetstream(false).buildOptions());
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -118,7 +119,7 @@ public class NatsServerRunnerTest extends TestBase {
     public void testDebugJsNewAndBuilderAndBuildOptionsFalseTrue() throws Exception {
         validateVariousConstructors(false, true, () -> {
             try {
-                return new NatsServerRunner(NatsServerRunner.builder().debug(false).jetstream(true).buildOptions());
+                return new NatsServerRunner(builder().debug(false).jetstream(true).buildOptions());
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -130,7 +131,7 @@ public class NatsServerRunnerTest extends TestBase {
     public void testDebugJsNewAndBuilderAndBuildOptionsTrueTrue() throws Exception {
         validateVariousConstructors(true, true, () -> {
             try {
-                return new NatsServerRunner(NatsServerRunner.builder().debug(true).jetstream(true).buildOptions());
+                return new NatsServerRunner(builder().debug(true).jetstream(true).buildOptions());
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -279,7 +280,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testCustomsBuilder() throws Exception {
-        try (NatsServerRunner runner = NatsServerRunner.builder()
+        try (NatsServerRunner runner = builder()
             .configInserts(CUSTOMS_CONFIG_INSERTS)
             .customArgs(CUSTOMS_ARGS)
             .build())
@@ -346,7 +347,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     private void _testWithConfigBuilder(String configFile, boolean checkConnect) throws Exception {
         String[] configInserts = { "# custom insert this comment " + configFile};
-        try (NatsServerRunner runner = NatsServerRunner.builder()
+        try (NatsServerRunner runner = builder()
             .configFilePath(SOURCE_CONFIG_FILE_PATH + configFile)
             .configInserts(configInserts)
             .build())
@@ -402,7 +403,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     private void _testMappedPorts(String configFile, boolean pMapped, boolean wsMapped, int natsMatch, int wsMatch) {
         try {
-            NatsServerRunner.Builder builder = NatsServerRunner.builder()
+            NatsServerRunner.Builder builder = builder()
                 .configFilePath(SOURCE_CONFIG_FILE_PATH + configFile);
 
             int pPortIn = -1;
@@ -473,7 +474,7 @@ public class NatsServerRunnerTest extends TestBase {
     @Test
     public void testTooManyUserPorts() {
         assertThrows(IOException.class, () ->
-            NatsServerRunner.builder()
+            builder()
                 .configFilePath(SOURCE_CONFIG_FILE_PATH + "config_port_user_ws_user.conf")
                 .build());
     }
@@ -481,7 +482,7 @@ public class NatsServerRunnerTest extends TestBase {
     @Test
     public void testBuilder() {
         Path p = Paths.get(".");
-        NatsServerRunner.Builder builder = NatsServerRunner.builder()
+        NatsServerRunner.Builder builder = builder()
             .port(1)
             .debugLevel(DebugLevel.DEBUG_VERBOSE_TRACE)
             .jetstream()
@@ -544,7 +545,7 @@ public class NatsServerRunnerTest extends TestBase {
     public void testBuilderMoreCoverage() throws Exception {
         Map<String, Integer> map = new HashMap<>();
         map.put("foo", 1);
-        NatsServerRunner.Builder builder = NatsServerRunner.builder()
+        NatsServerRunner.Builder builder = builder()
             .ports(map)
             .output(new ConsoleOutput())
             .fullErrorReportOnStartup(false);
@@ -583,7 +584,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testShutdownCoverage() throws Exception {
-        NatsServerRunner runner = NatsServerRunner.builder().build();
+        NatsServerRunner runner = builder().build();
         runner.shutdown(false);
         Thread.sleep(1000);
         runner.shutdown();
@@ -591,7 +592,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testBadConfig() throws Exception {
-        try (NatsServerRunner runner = NatsServerRunner.builder()
+        try (NatsServerRunner runner = builder()
             .configFilePath(SOURCE_CONFIG_FILE_PATH + "bad.conf")
             .output(new ConsoleOutput())
             .build())
@@ -607,7 +608,7 @@ public class NatsServerRunnerTest extends TestBase {
     public void testBuilderPortTakesPrecedence() throws Exception {
         String[] configInserts = new String[] {"port:4777"};
 
-        NatsServerRunner.Builder b = NatsServerRunner.builder()
+        NatsServerRunner.Builder b = builder()
             .debug(false)
             .jetstream(true)
             .configInserts(configInserts)
@@ -633,7 +634,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testTlsFirst() {
-        try (NatsServerRunner runner = NatsServerRunner.builder()
+        try (NatsServerRunner runner = builder()
             .configFilePath("src/test/resources/tls_first.conf")
 //            .skipConnectValidate()
             .build())
@@ -643,5 +644,67 @@ public class NatsServerRunnerTest extends TestBase {
         catch (Exception e) {
             fail(e);
         }
+    }
+
+    @Test
+    public void testJsStoragePathNoConfig() throws Exception {
+        try (NatsServerRunner runner = builder().jetstream().build()) {
+            List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
+            validateContainsOneInstance(lines, "jetstream {");
+            validateContainsOneInstance(lines, "store_dir=");
+        }
+    }
+
+    @Test
+    public void testJsStoragePathConfigFileWithoutBlock() throws Exception {
+        try (NatsServerRunner runner = builder().jetstream()
+            .configFilePath("src/test/resources/simple.conf")
+            .build()) {
+            List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
+            validateContainsOneInstance(lines, "jetstream {");
+            validateContainsOneInstance(lines, "store_dir=");
+        }
+    }
+
+    @Test
+    public void testJsStoragePathConfigFileWithBlock() throws Exception {
+        try (NatsServerRunner runner = builder().jetstream()
+            .configFilePath("src/test/resources/simple_with_js.conf")
+            .build()) {
+            List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
+            validateContainsOneInstance(lines, "jetstream {");
+            validateContainsOneInstance(lines, "store_dir=");
+        }
+    }
+
+    @Test
+    public void testJsStoragePathConfigInsert() throws Exception {
+        JsStorageDir jsStorageDir = JsStorageDir.temporaryInstance();
+        try (NatsServerRunner runner = builder().jetstream()
+            .configInserts(jsStorageDir.configInserts)
+            .build()) {
+            List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
+            validateContainsOneInstance(lines, "jetstream {");
+            validateContainsOneInstance(lines, "store_dir=");
+        }
+    }
+
+    @Test
+    public void testJsStoragePathConfigFileAndInsert() throws Exception {
+        JsStorageDir jsStorageDir = JsStorageDir.temporaryInstance();
+        assertThrows(IOException.class, () -> builder().jetstream()
+            .configFilePath("src/test/resources/simple_with_js.conf")
+            .configInserts(jsStorageDir.configInserts)
+            .build());
+    }
+
+    private void validateContainsOneInstance(List<String> lines, String s) {
+        int count = 0;
+        for (String line : lines) {
+            if (line.contains(s)) {
+                count++;
+            }
+        }
+        assertEquals(1, count, "Config contains " + count + "instances of " + s);
     }
 }

@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -41,6 +42,7 @@ public class NatsServerRunner implements AutoCloseable {
     private final Map<String, Integer> _ports;
     private final File _configFile;
     private final String _cmdLine;
+    private final AtomicReference<JsStorageDir> _jsStorageDir;
     private Process process;
     private OutputLogger nol;
 
@@ -330,6 +332,8 @@ public class NatsServerRunner implements AutoCloseable {
             }
         }
 
+        _jsStorageDir = new AtomicReference<>();
+
         int aliveCheckTries = b.aliveCheckTries == null ? DefaultProcessAliveCheckTries : b.aliveCheckTries;
         long aliveCheckWait = b.aliveCheckWait == null ? DefaultProcessAliveCheckWait : b.aliveCheckWait;
         int connectValidateTries = b.connectValidateTries == null ? DefaultConnectValidateTries : b.connectValidateTries;
@@ -342,7 +346,11 @@ public class NatsServerRunner implements AutoCloseable {
         cmd.add(_executablePath);
 
         try {
-            if (allowCommandLineOnly && b.configFilePath == null && b.configInserts == null) {
+            if (allowCommandLineOnly
+                && !b.jetstream
+                && b.configFilePath == null
+                && b.configInserts == null)
+            {
                 int port = getPort();
                 cmd.add("--port");
                 cmd.add(Integer.toString(port));
@@ -359,7 +367,7 @@ public class NatsServerRunner implements AutoCloseable {
                     portAlreadyDone = true;
                 }
                 else {
-                    processSuppliedConfigFile(writer, b.configFilePath);
+                    processSuppliedConfigFile(writer, b.configFilePath, b.jetstream);
                     portAlreadyDone = _ports.get(NATS_PORT_KEY) != -1;
                 }
 
@@ -368,8 +376,18 @@ public class NatsServerRunner implements AutoCloseable {
                         if (portAlreadyDone && s.startsWith("port:")) {
                             continue;
                         }
+                        if (s.contains("store_dir")) {
+                            if (_jsStorageDir.get() != null) {
+                                throw new IOException("store_dir provided in both config inserts and config file");
+                            }
+                            _jsStorageDir.set(JsStorageDir.extractedInstance(s));
+                        }
                         writeLine(writer, s);
                     }
+                }
+
+                if (b.jetstream && _jsStorageDir.get() == null) {
+                    writeJetStreamStorage(writer, (Path)null);
                 }
 
                 writer.flush();
@@ -520,8 +538,9 @@ public class NatsServerRunner implements AutoCloseable {
     // ----------------------------------------------------------------------------------------------------
     // HELPERS
     // ----------------------------------------------------------------------------------------------------
-    private void processSuppliedConfigFile(BufferedWriter writer, Path configFilePath) throws IOException {
+    private void processSuppliedConfigFile(BufferedWriter writer, Path configFilePath, boolean jetStream) throws IOException {
         Matcher constructionPortMatcher = Pattern.compile(PORT_REGEX).matcher("");
+        Matcher constructionJsStoreDirMatcher = Pattern.compile(JS_STORE_DIR_REGEX).matcher("");
         Matcher mappedPortMatcher = Pattern.compile(PORT_MAPPED_REGEX).matcher("");
 
         BufferedReader reader = new BufferedReader(new FileReader(configFilePath.toFile()));
@@ -579,6 +598,13 @@ public class NatsServerRunner implements AutoCloseable {
                 }
             }
 
+            if (jetStream) {
+                constructionJsStoreDirMatcher.reset(line);
+                if (constructionJsStoreDirMatcher.find()) {
+                    _jsStorageDir.set(JsStorageDir.extractedInstance(line));
+                }
+            }
+
             line = reader.readLine();
         }
 
@@ -602,9 +628,19 @@ public class NatsServerRunner implements AutoCloseable {
         writeLine(writer, PORT_PROPERTY + port);
     }
 
+    private void writeJetStreamStorage(BufferedWriter writer, Path path) throws IOException {
+        JsStorageDir jssd = path == null
+            ? JsStorageDir.temporaryInstance()
+            : new JsStorageDir(path);
+        _jsStorageDir.set(jssd);
+        for (String c : jssd.configInserts) {
+            writeLine(writer, c);
+        }
+    }
+
     private void writeLine(BufferedWriter writer, String line) throws IOException {
         writer.write(line);
-        writer.write("\n");
+        writer.write(System.lineSeparator());
     }
 
     private void sleep(long sleep) {

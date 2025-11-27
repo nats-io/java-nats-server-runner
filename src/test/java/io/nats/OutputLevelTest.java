@@ -35,7 +35,8 @@ public class OutputLevelTest extends TestBase {
 
     private void _test(String label, Supplier<Output> supplier) {
         setDefaultOutputSupplier(supplier);
-        System.out.println("\n==============================================================================");
+        System.out.println();
+        System.out.println("==============================================================================");
         System.out.println("Test " + label);
         _test(1, "Info",    false, Level.INFO);
         _test(2, "Nothing", false, Level.SEVERE);

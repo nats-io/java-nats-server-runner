@@ -46,7 +46,7 @@ Thumbs.db
 .gradle
 .m2
 
-# Build output directies
+# Build output directories
 /target
 */target
 /build
@@ -75,3 +75,6 @@ atlassian-ide-plugin.xml
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 /target/
+
+# test temp directory ignores
+/test_temp/jetstream

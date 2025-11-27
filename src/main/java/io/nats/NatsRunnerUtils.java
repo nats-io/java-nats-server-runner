@@ -30,6 +30,7 @@ public abstract class NatsRunnerUtils {
 
     public static final String CONF_FILE_PREFIX = "nats_java_test";
     public static final String CONF_FILE_EXT = ".conf";
+    public static final String JS_STORE_DIR_REGEX = "\\s*store_dir\\s*=";
     public static final String PORT_REGEX = "port: (\\d+)";
     public static final String PORT_MAPPED_REGEX = "port: <(\\w+)>";
     public static final String PORT_PROPERTY = "port: ";

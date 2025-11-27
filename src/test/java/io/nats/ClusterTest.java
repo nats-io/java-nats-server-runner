@@ -16,12 +16,14 @@ package io.nats;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
-import static io.nats.ClusterUtils.*;
+import static io.nats.ClusterUtils.DEFAULT_CLUSTER_DEFAULTS;
+import static io.nats.ClusterUtils.createClusterInserts;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Isolated
@@ -31,8 +33,8 @@ public class ClusterTest extends TestBase {
     public void testCreateCluster() throws Exception {
         _testCreateCluster(createClusterInserts(), false);
         _testCreateCluster(createClusterInserts(DEFAULT_CLUSTER_DEFAULTS), false);
-        _testCreateCluster(createClusterInserts(createTemporaryJetStreamStoreDirBase()), true);
-        _testCreateCluster(createClusterInserts(DEFAULT_CLUSTER_DEFAULTS, createTemporaryJetStreamStoreDirBase()), true);
+        _testCreateCluster(createClusterInserts(Files.createTempDirectory(null)), true);
+        _testCreateCluster(createClusterInserts(DEFAULT_CLUSTER_DEFAULTS, Files.createTempDirectory(null)), true);
     }
 
     private void _testCreateCluster(List<ClusterInsert> clusterInserts, boolean js) throws Exception {

@@ -47,7 +47,7 @@ public class ClusterInsert {
         }
         StringBuilder sb = new StringBuilder();
         for (String s : configInserts) {
-            sb.append(s).append("\r\n");
+            sb.append(s).append(System.lineSeparator());
         }
         return sb.toString();
     }

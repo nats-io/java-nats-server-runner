@@ -13,9 +13,6 @@
 
 package io.nats;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -68,10 +65,6 @@ public abstract class ClusterUtils {
         return nodes;
     }
 
-    public static Path createTemporaryJetStreamStoreDirBase() throws IOException {
-        return Files.createTempDirectory(null);
-    }
-
     public static List<ClusterInsert> createClusterInserts(List<ClusterNode> nodes) {
         List<ClusterInsert> inserts = new ArrayList<>();
         for (ClusterNode node : nodes) {
@@ -81,16 +74,8 @@ public abstract class ClusterUtils {
                 lines.add("http: " + node.monitor);
             }
             if (node.jsStoreDir != null) {
-                String dir = node.jsStoreDir.toString();
-                if (File.separatorChar == '\\') {
-                    dir = dir.replace("\\", "\\\\").replace("/", "\\\\");
-                }
-                else {
-                    dir = dir.replace("\\", "/");
-                }
-                lines.add("jetstream {");
-                lines.add("    store_dir=" + dir);
-                lines.add("}");
+                JsStorageDir jssd = new JsStorageDir(node.jsStoreDir);
+                lines.addAll(jssd.configInserts);
             }
             lines.add("server_name=" + node.serverName);
             lines.add("cluster {");
