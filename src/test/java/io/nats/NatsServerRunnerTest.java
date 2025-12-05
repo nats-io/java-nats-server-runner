@@ -669,9 +669,6 @@ public class NatsServerRunnerTest extends TestBase {
     private void validateJsStorage(NatsServerRunner runner) throws IOException {
         assertTrue(runner.getCmdLine().contains(JETSTREAM_OPTION));
         List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
-        for (String line : lines) {
-            System.out.println(line);
-        }
         validateContainsOneInstance(lines, "jetstream {");
         validateContainsOneInstance(lines, "store_dir=");
     }
