@@ -57,10 +57,11 @@ public class TestBase {
     }
 
     protected void validateCommandLine(NatsServerRunner runner, boolean debug, boolean jetStream, String... customArgs) {
-        assertEquals(debug, runner.getCmdLine().contains(" " + DebugLevel.DEBUG_TRACE.getCmdOption()));
-        assertEquals(jetStream, runner.getCmdLine().contains(" " + JETSTREAM_OPTION));
+        String cmdline = runner.getCmdLine();
+        assertEquals(debug, cmdline.contains(" " + DebugLevel.DEBUG_TRACE.getCmdOption()));
+        assertEquals(jetStream, cmdline.contains(" " + JETSTREAM_OPTION));
         for (String ca : customArgs) {
-            assertTrue(runner.getCmdLine().contains(" " + ca));
+            assertTrue(cmdline.contains(" " + ca));
         }
     }
 
@@ -117,7 +118,7 @@ public class TestBase {
             NatsServerRunner.isServerReachable(runner.getNatsPort(), 200);
         }
         catch (IOException e) {
-            fail();
+            fail(e);
         }
     }
 }

@@ -74,7 +74,7 @@ public abstract class ClusterUtils {
                 lines.add("http: " + node.monitor);
             }
             if (node.jsStoreDir != null) {
-                JsStorageDir jssd = new JsStorageDir(node.jsStoreDir);
+                JsConfig jssd = new JsConfig(node.jsStoreDir);
                 lines.addAll(jssd.configInserts);
             }
             lines.add("server_name=" + node.serverName);

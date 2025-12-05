@@ -60,17 +60,17 @@ public class ClusterTest extends TestBase {
 
                     Thread.sleep(5000); // give servers time to spin up and be ready
 
-                    validateCommandLine(runner0, false, false);
+                    validateCommandLine(runner0, false, js);
                     validateHostAndPort(runner0);
                     validateConfigLines(runner0, Collections.singletonList("name: cluster"));
                     validateConnection(runner0);
 
-                    validateCommandLine(runner1, false, false);
+                    validateCommandLine(runner1, false, js);
                     validateHostAndPort(runner1);
                     validateConfigLines(runner1, Collections.singletonList("name: cluster"));
                     validateConnection(runner1);
 
-                    validateCommandLine(runner2, false, false);
+                    validateCommandLine(runner2, false, js);
                     validateHostAndPort(runner2);
                     validateConfigLines(runner2, Collections.singletonList("name: cluster"));
                     validateConnection(runner2);

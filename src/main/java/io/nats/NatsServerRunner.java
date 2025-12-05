@@ -41,8 +41,9 @@ public class NatsServerRunner implements AutoCloseable {
     private final Output _displayOut;
     private final Map<String, Integer> _ports;
     private final File _configFile;
+    private final List<String> _configLines;
     private final String _cmdLine;
-    private final AtomicReference<JsStorageDir> _jsStorageDir;
+    private final AtomicReference<JsConfig> _jsConfig;
     private Process process;
     private OutputLogger nol;
 
@@ -332,7 +333,8 @@ public class NatsServerRunner implements AutoCloseable {
             }
         }
 
-        _jsStorageDir = new AtomicReference<>();
+        boolean jetstream = b.jetstream;
+        _jsConfig = new AtomicReference<>();
 
         int aliveCheckTries = b.aliveCheckTries == null ? DefaultProcessAliveCheckTries : b.aliveCheckTries;
         long aliveCheckWait = b.aliveCheckWait == null ? DefaultProcessAliveCheckWait : b.aliveCheckWait;
@@ -355,10 +357,12 @@ public class NatsServerRunner implements AutoCloseable {
                 cmd.add("--port");
                 cmd.add(Integer.toString(port));
                 _configFile = null;
+                _configLines = null;
                 _ports.put(NATS_PORT_KEY, port);
             }
             else {
                 _configFile = File.createTempFile(CONF_FILE_PREFIX, CONF_FILE_EXT);
+                _configLines = new ArrayList<>();
                 BufferedWriter writer = new BufferedWriter(new FileWriter(_configFile));
                 boolean portAlreadyDone;
                 if (b.configFilePath == null) {
@@ -367,27 +371,50 @@ public class NatsServerRunner implements AutoCloseable {
                     portAlreadyDone = true;
                 }
                 else {
-                    processSuppliedConfigFile(writer, b.configFilePath, b.jetstream);
+                    processSuppliedConfigFile(writer, b.configFilePath);
                     portAlreadyDone = _ports.get(NATS_PORT_KEY) != -1;
                 }
 
                 if (b.configInserts != null) {
+                    List<String> jsInserts = new ArrayList<>();
+                    boolean inJsInserts = false;
                     for (String s : b.configInserts) {
-                        if (portAlreadyDone && s.startsWith("port:")) {
+                        String trim = s.trim();
+                        if (portAlreadyDone && trim.startsWith("port:")) {
                             continue;
                         }
-                        if (s.contains("store_dir")) {
-                            if (_jsStorageDir.get() != null) {
-                                throw new IOException("store_dir provided in both config inserts and config file");
+                        if (inJsInserts) {
+                            jsInserts.add(trim);
+                            if (trim.endsWith("}")) {
+                                inJsInserts = false;
+                                _jsConfig.set(new JsConfig(jsInserts));
                             }
-                            _jsStorageDir.set(JsStorageDir.extractedInstance(s));
                         }
-                        writeLine(writer, s);
+                        else if (trim.startsWith("jetstream")) {
+                            if (_jsConfig.get() != null) {
+                                throw new IOException("jetstream block provided in both config inserts and config file");
+                            }
+                            if (trim.endsWith("enabled")) {
+                                _jsConfig.set(new JsConfig());
+                            }
+                            else {
+                                inJsInserts = true;
+                                jsInserts.add(trim);
+                            }
+                        }
+                        else {
+                            writeConfigLine(writer, s);
+                        }
                     }
                 }
 
-                if (b.jetstream && _jsStorageDir.get() == null) {
-                    writeJetStreamStorage(writer, (Path)null);
+                if (b.jetstream || _jsConfig.get() != null) {
+                    if (_jsConfig.get() == null) {
+                        _jsConfig.set(new JsConfig());
+                    }
+                    for (String s : _jsConfig.get().configInserts) {
+                        writeConfigLine(writer, s);
+                    }
                 }
 
                 writer.flush();
@@ -402,9 +429,7 @@ public class NatsServerRunner implements AutoCloseable {
             throw ioe;
         }
 
-        // Rewrite the port to a new one, so we don't reuse the same one over and over
-
-        if (b.jetstream) {
+        if (b.jetstream || _jsConfig.get() != null) {
             cmd.add(JETSTREAM_OPTION);
         }
 
@@ -417,6 +442,10 @@ public class NatsServerRunner implements AutoCloseable {
         }
 
         _cmdLine = String.join(" ", cmd);
+
+        if (b.dryRun) {
+            return;
+        }
 
         try {
             ProcessBuilder pb = new ProcessBuilder(cmd);
@@ -538,9 +567,8 @@ public class NatsServerRunner implements AutoCloseable {
     // ----------------------------------------------------------------------------------------------------
     // HELPERS
     // ----------------------------------------------------------------------------------------------------
-    private void processSuppliedConfigFile(BufferedWriter writer, Path configFilePath, boolean jetStream) throws IOException {
+    private void processSuppliedConfigFile(BufferedWriter writer, Path configFilePath) throws IOException {
         Matcher constructionPortMatcher = Pattern.compile(PORT_REGEX).matcher("");
-        Matcher constructionJsStoreDirMatcher = Pattern.compile(JS_STORE_DIR_REGEX).matcher("");
         Matcher mappedPortMatcher = Pattern.compile(PORT_MAPPED_REGEX).matcher("");
 
         BufferedReader reader = new BufferedReader(new FileReader(configFilePath.toFile()));
@@ -552,56 +580,67 @@ public class NatsServerRunner implements AutoCloseable {
         int level = 0;
         while (line != null) {
             String trim = line.trim();
-            if (trim.endsWith("{")) {
-                level++;
-            }
-            else if (trim.startsWith("}")) {
-                level--;
-            }
-            // replacing it here allows us to not care if the port is at the top level
-            // or for instance inside a websocket block
-            constructionPortMatcher.reset(line);
-            if (constructionPortMatcher.find()) {
-                if (userTaken) {
-                    throw new IOException("Improper configuration, cannot assign port multiple times.");
-                }
-                userTaken = true;
-                if (level == 0) {
-                    natsPort = userPort;
+            if (trim.startsWith("jetstream")) {
+                // extract jetstream
+                if (trim.endsWith("enabled")) {
+                    _jsConfig.set(new JsConfig());
                 }
                 else {
-                    _ports.put(NON_NATS_PORT_KEY, userPort);
+                    List<String> jsLines = new ArrayList<>();
+                    jsLines.add(line);
+                    while (!trim.endsWith("}")) {
+                        line = reader.readLine();
+                        jsLines.add(line);
+                        trim = line.trim();
+                    }
+                    _jsConfig.set(new JsConfig(jsLines));
                 }
-                writeLine(writer, line.replace(constructionPortMatcher.group(1), Integer.toString(userPort)));
             }
             else {
-                mappedPortMatcher.reset(line);
-                if (mappedPortMatcher.find()) {
-                    int start = line.indexOf("<");
-                    int end = line.indexOf(">");
-                    String key = line.substring(start + 1, end);
-                    Integer mapped = _ports.get(key);
-                    if (mapped == null) {
-                        mapped = nextPort();
-                        _ports.put(key, mapped);
+                if (trim.endsWith("{")) {
+                    level++;
+                }
+                else if (trim.startsWith("}")) {
+                    level--;
+                }
+                // replacing it here allows us to not care if the port is at the top level
+                // or for instance inside a websocket block
+                constructionPortMatcher.reset(line);
+                if (constructionPortMatcher.find()) {
+                    if (userTaken) {
+                        throw new IOException("Improper configuration, cannot assign port multiple times.");
                     }
-                    writeLine(writer, line.replace("<" + key + ">", mapped.toString()));
+                    userTaken = true;
                     if (level == 0) {
-                        natsPort = mapped;
+                        natsPort = userPort;
                     }
                     else {
-                        _ports.put(NON_NATS_PORT_KEY, mapped);
+                        _ports.put(NON_NATS_PORT_KEY, userPort);
                     }
+                    writeConfigLine(writer, line.replace(constructionPortMatcher.group(1), Integer.toString(userPort)));
                 }
                 else {
-                    writeLine(writer, line);
-                }
-            }
-
-            if (jetStream) {
-                constructionJsStoreDirMatcher.reset(line);
-                if (constructionJsStoreDirMatcher.find()) {
-                    _jsStorageDir.set(JsStorageDir.extractedInstance(line));
+                    mappedPortMatcher.reset(line);
+                    if (mappedPortMatcher.find()) {
+                        int start = line.indexOf("<");
+                        int end = line.indexOf(">");
+                        String key = line.substring(start + 1, end);
+                        Integer mapped = _ports.get(key);
+                        if (mapped == null) {
+                            mapped = nextPort();
+                            _ports.put(key, mapped);
+                        }
+                        writeConfigLine(writer, line.replace("<" + key + ">", mapped.toString()));
+                        if (level == 0) {
+                            natsPort = mapped;
+                        }
+                        else {
+                            _ports.put(NON_NATS_PORT_KEY, mapped);
+                        }
+                    }
+                    else {
+                        writeConfigLine(writer, line);
+                    }
                 }
             }
 
@@ -625,20 +664,11 @@ public class NatsServerRunner implements AutoCloseable {
     }
 
     private void writePortLine(BufferedWriter writer, int port) throws IOException {
-        writeLine(writer, PORT_PROPERTY + port);
+        writeConfigLine(writer, PORT_PROPERTY + port);
     }
 
-    private void writeJetStreamStorage(BufferedWriter writer, Path path) throws IOException {
-        JsStorageDir jssd = path == null
-            ? JsStorageDir.temporaryInstance()
-            : new JsStorageDir(path);
-        _jsStorageDir.set(jssd);
-        for (String c : jssd.configInserts) {
-            writeLine(writer, c);
-        }
-    }
-
-    private void writeLine(BufferedWriter writer, String line) throws IOException {
+    private void writeConfigLine(BufferedWriter writer, String line) throws IOException {
+        _configLines.add(line);
         writer.write(line);
         writer.write(System.lineSeparator());
     }
@@ -697,6 +727,10 @@ public class NatsServerRunner implements AutoCloseable {
      */
     public String getConfigFile() {
         return _configFile == null ? null : _configFile.getAbsolutePath();
+    }
+
+    public List<String> getConfigLines() {
+        return _configLines;
     }
 
     /**
@@ -770,6 +804,7 @@ public class NatsServerRunner implements AutoCloseable {
         boolean fullErrorReportOnStartup = true;
         String customName;
         OutputThreadProvider outputThreadProvider;
+        boolean dryRun = false;
 
         public Builder port(Integer port) {
             return port(NatsRunnerUtils.CONFIG_PORT_KEY, port);
@@ -796,6 +831,10 @@ public class NatsServerRunner implements AutoCloseable {
         public Builder debugLevel(DebugLevel debugLevel) {
             this.debugLevel = debugLevel;
             return this;
+        }
+
+        public Builder debug() {
+            return debug(true);
         }
 
         public Builder debug(boolean trueForDebugTraceFalseForNoDebug) {
@@ -920,6 +959,16 @@ public class NatsServerRunner implements AutoCloseable {
 
         public Builder outputThreadProvider(OutputThreadProvider outputThreadProvider) {
             this.outputThreadProvider = outputThreadProvider;
+            return this;
+        }
+
+        public Builder dryRun(boolean dryRun) {
+            this.dryRun = dryRun;
+            return this;
+        }
+
+        public Builder dryRun() {
+            this.dryRun = true;
             return this;
         }
 

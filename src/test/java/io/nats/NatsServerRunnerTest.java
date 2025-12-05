@@ -634,9 +634,9 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testTlsFirst() {
-        try (NatsServerRunner runner = builder()
+        //noinspection EmptyTryBlock
+        try (NatsServerRunner ignored = builder()
             .configFilePath("src/test/resources/tls_first.conf")
-//            .skipConnectValidate()
             .build())
         {
             // just wanted to connect
@@ -655,47 +655,25 @@ public class NatsServerRunnerTest extends TestBase {
         }
     }
 
-    @Test
-    public void testJsStoragePathConfigFileWithoutBlock() throws Exception {
-        try (NatsServerRunner runner = builder().jetstream()
-            .configFilePath("src/test/resources/simple.conf")
-            .build()) {
-            List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
-            validateContainsOneInstance(lines, "jetstream {");
-            validateContainsOneInstance(lines, "store_dir=");
+    private void testJsStorage(String conf, boolean setJetstream) throws Exception {
+        try (NatsServerRunner runner = builder()
+            .jetstream(setJetstream)
+            .dryRun()
+            .configFilePath(conf)
+            .build())
+        {
+            validateJsStorage(runner);
         }
     }
 
-    @Test
-    public void testJsStoragePathConfigFileWithBlock() throws Exception {
-        try (NatsServerRunner runner = builder().jetstream()
-            .configFilePath("src/test/resources/simple_with_js.conf")
-            .build()) {
-            List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
-            validateContainsOneInstance(lines, "jetstream {");
-            validateContainsOneInstance(lines, "store_dir=");
+    private void validateJsStorage(NatsServerRunner runner) throws IOException {
+        assertTrue(runner.getCmdLine().contains(JETSTREAM_OPTION));
+        List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
+        for (String line : lines) {
+            System.out.println(line);
         }
-    }
-
-    @Test
-    public void testJsStoragePathConfigInsert() throws Exception {
-        JsStorageDir jsStorageDir = JsStorageDir.temporaryInstance();
-        try (NatsServerRunner runner = builder().jetstream()
-            .configInserts(jsStorageDir.configInserts)
-            .build()) {
-            List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
-            validateContainsOneInstance(lines, "jetstream {");
-            validateContainsOneInstance(lines, "store_dir=");
-        }
-    }
-
-    @Test
-    public void testJsStoragePathConfigFileAndInsert() throws Exception {
-        JsStorageDir jsStorageDir = JsStorageDir.temporaryInstance();
-        assertThrows(IOException.class, () -> builder().jetstream()
-            .configFilePath("src/test/resources/simple_with_js.conf")
-            .configInserts(jsStorageDir.configInserts)
-            .build());
+        validateContainsOneInstance(lines, "jetstream {");
+        validateContainsOneInstance(lines, "store_dir=");
     }
 
     private void validateContainsOneInstance(List<String> lines, String s) {
@@ -705,6 +683,47 @@ public class NatsServerRunnerTest extends TestBase {
                 count++;
             }
         }
-        assertEquals(1, count, "Config contains " + count + "instances of " + s);
+        assertEquals(1, count, "Config contains " + count + " instances of " + s);
+    }
+
+    @Test
+    public void testJsStoragePathConfigFileWithoutJsBlock() throws Exception {
+        testJsStorage("src/test/resources/simple.conf", true);
+    }
+
+    @Test
+    public void testJsWithEnabled() throws Exception {
+        testJsStorage("src/test/resources/js_enabled.conf", true);
+        testJsStorage("src/test/resources/js_enabled.conf", false);
+    }
+
+    @Test
+    public void testJsWithStoreDir() throws Exception {
+        testJsStorage("src/test/resources/js_with_store_dir.conf", true);
+        testJsStorage("src/test/resources/js_with_store_dir.conf", false);
+    }
+
+    @Test
+    public void testJsWoStoreDir() throws Exception {
+        testJsStorage("src/test/resources/js_wo_store_dir.conf", true);
+        testJsStorage("src/test/resources/js_wo_store_dir.conf", false);
+    }
+
+    @Test
+    public void testJsStoragePathConfigInsert() throws Exception {
+        JsConfig jsConfig = new JsConfig();
+        try (NatsServerRunner runner = builder()
+            .jetstream()
+            .dryRun()
+            .configInserts(jsConfig.configInserts)
+            .build()) {
+            validateJsStorage(runner);
+        }
+        try (NatsServerRunner runner = builder()
+            .dryRun()
+            .configInserts(jsConfig.configInserts)
+            .build()) {
+            validateJsStorage(runner);
+        }
     }
 }
