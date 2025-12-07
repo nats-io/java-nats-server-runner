@@ -333,7 +333,6 @@ public class NatsServerRunner implements AutoCloseable {
             }
         }
 
-        boolean jetstream = b.jetstream;
         _jsConfig = new AtomicReference<>();
 
         int aliveCheckTries = b.aliveCheckTries == null ? DefaultProcessAliveCheckTries : b.aliveCheckTries;
@@ -364,68 +363,30 @@ public class NatsServerRunner implements AutoCloseable {
                 _configFile = File.createTempFile(CONF_FILE_PREFIX, CONF_FILE_EXT);
                 _configLines = new ArrayList<>();
                 BufferedWriter writer = new BufferedWriter(new FileWriter(_configFile));
-                boolean portAlreadyDone;
-                if (b.configFilePath == null) {
-                    _ports.put(NATS_PORT_KEY, userPort);
-                    writePortLine(writer, userPort);
-                    portAlreadyDone = true;
-                }
-                else {
-                    processSuppliedConfigFile(writer, b.configFilePath);
-                    portAlreadyDone = _ports.get(NATS_PORT_KEY) != -1;
+                boolean portEntryDone = false;
+                boolean jsBlockDone = false;
+                if (b.configFilePath != null) {
+                    BufferedReader reader = new BufferedReader(new FileReader(b.configFilePath.toFile()));
+                    Iterator<String> iterator = reader.lines().iterator();
+                    processConfigLines(writer, iterator, portEntryDone, jsBlockDone);
+                    reader.close();
+                    portEntryDone = _ports.get(NATS_PORT_KEY) != -1;
+                    jsBlockDone = _jsConfig.get() != null;
                 }
 
                 if (b.configInserts != null) {
-                    boolean processJetstream = true;// the case where the inserts have a jetstream block and a jsEnabled
-                    List<String> jsInserts = new ArrayList<>();
-                    boolean inJsInserts = false;
-                    for (String s : b.configInserts) {
-                        String trim = s.trim();
-                        if (portAlreadyDone && trim.startsWith("port:")) {
-                            continue;
-                        }
-                        if (inJsInserts) {
-                            jsInserts.add(trim);
-                            if (trim.endsWith("}")) {
-                                inJsInserts = false;
-                                processJetstream = false;
-                                _jsConfig.set(new JsConfig(jsInserts));
-                            }
-                        }
-                        else if (trim.startsWith("jetstream") && processJetstream) {
-                            if (_jsConfig.get() != null) {
-                                throw new IOException("jetstream block provided in both config inserts and config file");
-                            }
-                            if (trim.endsWith("enabled")) {
-                                _jsConfig.set(new JsConfig());
-                                processJetstream = false;
-                            }
-                            else {
-                                jsInserts.add(trim);
-                                if (trim.endsWith("}")) {
-                                    // a one-liner...
-                                    _jsConfig.set(new JsConfig(jsInserts));
-                                    processJetstream = false;
-                                }
-                                else {
-                                    inJsInserts = true;
-                                }
-
-                            }
-                        }
-                        else {
-                            writeConfigLine(writer, s);
-                        }
-                    }
+                    processConfigLines(writer, b.configInserts.iterator(), portEntryDone, jsBlockDone);
+                    portEntryDone = _ports.get(NATS_PORT_KEY) != -1;
                 }
 
-                if (b.jetstream || _jsConfig.get() != null) {
-                    if (_jsConfig.get() == null) {
-                        _jsConfig.set(new JsConfig());
-                    }
-                    for (String s : _jsConfig.get().configInserts) {
-                        writeConfigLine(writer, s);
-                    }
+                if (!portEntryDone) {
+                    _ports.put(NATS_PORT_KEY, userPort);
+                    writePortLine(writer, userPort);
+                }
+
+                if (b.jetstream && _jsConfig.get() == null) {
+                    _jsConfig.set(new JsConfig());
+                    writeJsConfig(writer);
                 }
 
                 writer.flush();
@@ -578,20 +539,21 @@ public class NatsServerRunner implements AutoCloseable {
     // ----------------------------------------------------------------------------------------------------
     // HELPERS
     // ----------------------------------------------------------------------------------------------------
-    private void processSuppliedConfigFile(BufferedWriter writer, Path configFilePath) throws IOException {
+    private void processConfigLines(BufferedWriter writer, Iterator<String> iterator, boolean portEntryDone, boolean jsBlockDone) throws IOException {
         Matcher constructionPortMatcher = Pattern.compile(PORT_REGEX).matcher("");
         Matcher mappedPortMatcher = Pattern.compile(PORT_MAPPED_REGEX).matcher("");
-
-        BufferedReader reader = new BufferedReader(new FileReader(configFilePath.toFile()));
 
         boolean userTaken = false;
         int userPort = _ports.get(USER_PORT_KEY); // already ensured so it's not -1
         int natsPort = -1;
-        String line = reader.readLine();
         int level = 0;
-        while (line != null) {
+        while (iterator.hasNext()) {
+            String line = iterator.next();
             String trim = line.trim();
-            if (trim.startsWith("jetstream")) {
+            if (trim.startsWith("jetstream") && level == 0) {
+                if (jsBlockDone) {
+                    throw new IOException("Improper configuration, cannot have multiple top level jetstream blocks.");
+                }
                 // extract jetstream
                 if (trim.endsWith("enabled")) {
                     _jsConfig.set(new JsConfig());
@@ -600,12 +562,14 @@ public class NatsServerRunner implements AutoCloseable {
                     List<String> jsLines = new ArrayList<>();
                     jsLines.add(line);
                     while (!trim.endsWith("}")) {
-                        line = reader.readLine();
+                        line = iterator.next();
                         jsLines.add(line);
                         trim = line.trim();
                     }
                     _jsConfig.set(new JsConfig(jsLines));
                 }
+                jsBlockDone = true;
+                writeJsConfig(writer);
             }
             else {
                 if (trim.endsWith("{")) {
@@ -618,7 +582,7 @@ public class NatsServerRunner implements AutoCloseable {
                 // or for instance inside a websocket block
                 constructionPortMatcher.reset(line);
                 if (constructionPortMatcher.find()) {
-                    if (userTaken) {
+                    if (userTaken || portEntryDone) {
                         throw new IOException("Improper configuration, cannot assign port multiple times.");
                     }
                     userTaken = true;
@@ -628,7 +592,7 @@ public class NatsServerRunner implements AutoCloseable {
                     else {
                         _ports.put(NON_NATS_PORT_KEY, userPort);
                     }
-                    writeConfigLine(writer, line.replace(constructionPortMatcher.group(1), Integer.toString(userPort)));
+                    writeConfigLine(writer, PORT_PROPERTY + userPort);
                 }
                 else {
                     mappedPortMatcher.reset(line);
@@ -654,11 +618,7 @@ public class NatsServerRunner implements AutoCloseable {
                     }
                 }
             }
-
-            line = reader.readLine();
         }
-
-        reader.close();
 
         if (natsPort == -1) {
             if (userTaken) {
@@ -676,6 +636,12 @@ public class NatsServerRunner implements AutoCloseable {
 
     private void writePortLine(BufferedWriter writer, int port) throws IOException {
         writeConfigLine(writer, PORT_PROPERTY + port);
+    }
+
+    private void writeJsConfig(BufferedWriter writer) throws IOException {
+        for (String s : _jsConfig.get().configInserts) {
+            writeConfigLine(writer, s);
+        }
     }
 
     private void writeConfigLine(BufferedWriter writer, String line) throws IOException {

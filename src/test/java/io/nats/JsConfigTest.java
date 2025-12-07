@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -67,27 +66,30 @@ public class JsConfigTest extends TestBase {
 
         validate3(new JsConfig());
         validate3(new JsConfig(Files.createTempDirectory(null)));
-        validate3(new JsConfig(Files.createTempDirectory(null).toString()));
 
-        validate3(new JsConfig(Collections.singletonList("jetstream{}")));
-        validate3(new JsConfig(Collections.singletonList("jetstream {}")));
-        validate3(new JsConfig(Collections.singletonList("jetstream { }")));
-        validate3(new JsConfig(Collections.singletonList("jetstream: enabled")));
-        validate3(new JsConfig(Collections.singletonList("jetstream:enabled")));
-
+        validate3("jetstream{}");
+        validate3("jetstream {}");
+        validate3("jetstream { }");
         validate3(expandedJustJetStream);
         validate3(inlineJustJetStream);
 
-        assertThrows(IllegalArgumentException.class, () -> configFromString("x"));
-        assertThrows(IllegalArgumentException.class, () -> configFromString("jetstream {"));
-        assertThrows(IllegalArgumentException.class, () -> configFromString("jetstream { x"));
-        assertThrows(IllegalArgumentException.class, () -> configFromString("jetstream x"));
-        assertThrows(IllegalArgumentException.class, () -> configFromString("jetstream x"));
-        assertThrows(IllegalArgumentException.class, () -> configFromString("jetstream:x"));
+        validate3(toConfig("jetstream: enabled"));
+        validate3(toConfig("jetstream:enabled"));
+
+        assertThrows(IllegalArgumentException.class, () -> toConfig("x"));
+        assertThrows(IllegalArgumentException.class, () -> toConfig("jetstream {"));
+        assertThrows(IllegalArgumentException.class, () -> toConfig("jetstream { x"));
+        assertThrows(IllegalArgumentException.class, () -> toConfig("jetstream: {"));
+        assertThrows(IllegalArgumentException.class, () -> toConfig("jetstream: { x"));
+        assertThrows(IllegalArgumentException.class, () -> toConfig("jetstream"));
+        assertThrows(IllegalArgumentException.class, () -> toConfig("jetstream x"));
+        assertThrows(IllegalArgumentException.class, () -> toConfig("jetstream:"));
+        assertThrows(IllegalArgumentException.class, () -> toConfig("jetstream: x"));
     }
 
     private static void validate3(String testString) throws IOException {
-        validate3(configFromString(testString));
+        validate3(toConfig(testString));
+        validate3(toConfig(colonize(testString)));
     }
 
     private static void validate3(JsConfig jsConfig) {
@@ -98,16 +100,23 @@ public class JsConfigTest extends TestBase {
     }
 
     private static void validate5(String testString) throws IOException {
-        JsConfig jsConfig = configFromString(testString);
+        validate5(toConfig(testString));
+        validate5(toConfig(colonize(testString)));
+    }
+
+    private static void validate5(JsConfig jsConfig) {
         assertEquals(5, jsConfig.configInserts.size());
         assertEquals("jetstream {", jsConfig.configInserts.get(0));
-        assertEquals("    " + jsConfig.storeDir + ",", jsConfig.configInserts.get(1));
-        assertEquals("    max_mem_store:1GB,", jsConfig.configInserts.get(2));
-        assertEquals("    max_file_store:2GB", jsConfig.configInserts.get(3));
+        assertEquals("    max_mem_store:1GB,", jsConfig.configInserts.get(1));
+        assertEquals("    max_file_store:2GB,", jsConfig.configInserts.get(2));
+        assertEquals("    " + jsConfig.storeDir, jsConfig.configInserts.get(3));
         assertEquals("}", jsConfig.configInserts.get(4));
     }
 
-    private static JsConfig configFromString(String testString) throws IOException {
+    private static String colonize(String jsString) {
+        return jsString.replace("jetstream", "jetstream:");
+    }
+    private static JsConfig toConfig(String testString) throws IOException {
         return new JsConfig(Arrays.asList(testString.split("\\n")));
     }
 }

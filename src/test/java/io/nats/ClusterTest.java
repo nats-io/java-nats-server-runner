@@ -50,13 +50,13 @@ public class ClusterTest extends TestBase {
             }
         }
 
-        ClusterInsert ci0 = clusterInserts.get(0);
-        ClusterInsert ci1 = clusterInserts.get(1);
-        ClusterInsert ci2 = clusterInserts.get(2);
+        NatsServerRunner.Builder b0 = NatsServerRunner.builder().configInserts(clusterInserts.get(0).configInserts);
+        NatsServerRunner.Builder b1 = NatsServerRunner.builder().configInserts(clusterInserts.get(1).configInserts);
+        NatsServerRunner.Builder b2 = NatsServerRunner.builder().configInserts(clusterInserts.get(2).configInserts);
 
-        try (NatsServerRunner runner0 = new NatsServerRunner(ci0.node.port, false, false, null, ci0.configInserts, null)) {
-            try (NatsServerRunner runner1 = new NatsServerRunner(ci1.node.port, false, false, null, ci1.configInserts, null)) {
-                try (NatsServerRunner runner2 = new NatsServerRunner(ci2.node.port, false, false, null, ci2.configInserts, null)) {
+        try (NatsServerRunner runner0 = new NatsServerRunner(b0)) {
+            try (NatsServerRunner runner1 = new NatsServerRunner(b1)) {
+                try (NatsServerRunner runner2 = new NatsServerRunner(b2)) {
 
                     Thread.sleep(5000); // give servers time to spin up and be ready
 

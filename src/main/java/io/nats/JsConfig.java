@@ -30,16 +30,12 @@ public class JsConfig {
     public final String storeDir;
     public final List<String> configInserts;
 
-    public JsConfig(Path dirPath) {
-        this(dirPath.toString(), null);
-    }
-
-    public JsConfig(String dir) {
-        this(dir, null);
-    }
-
     public JsConfig() throws IOException {
         this(Files.createTempDirectory(null).toString(), null);
+    }
+
+    public JsConfig(Path dirPath) {
+        this(dirPath.toString(), null);
     }
 
     public JsConfig(List<String> lines) throws IOException {
@@ -51,78 +47,39 @@ public class JsConfig {
 
         configInserts = new ArrayList<>();
         configInserts.add("jetstream {");
-        configInserts.add(INDENT + this.storeDir);
 
         List<String> lines = null;
-        boolean parse = true;
-        if (inputLines == null || inputLines.isEmpty()) {
-            parse = false;
-        }
-        else {
-            lines = new ArrayList<>();
-            for (String inputLine : inputLines) {
-                if (inputLine.trim().length() > 0) {
-                    lines.add(inputLine);
-                }
+        if (inputLines != null && !inputLines.isEmpty()) {
+            // combine and remove spaces to make it easier to parse
+            StringBuilder sbx = new StringBuilder();
+            for (String line : inputLines) {
+                sbx.append(line.trim().replaceAll(" ", ""));
             }
-            if (lines.size() == 1) {
-                String noSpace = lines.get(0).trim().replaceAll(" ", "");
-                if (noSpace.equals("jetstream{}")) {
-                    parse = false;
+            String s = sbx.toString();
+            if (!s.startsWith("jetstream")) {
+                throw new IllegalArgumentException("Input not recognized as jetstream block");
+            }
+
+            if (!s.endsWith("enabled")) {
+                s = s.substring(9); // skip past jetstream
+                // it must then start with '{' or ':{'
+                // it must end with }
+                if ((!s.startsWith("{") || !s.startsWith(":{")) && !s.endsWith("}")) {
+                    throw new IllegalArgumentException("Input not recognized as jetstream block");
                 }
-                else if (noSpace.startsWith("jetstream{")) {
-                    if (!noSpace.endsWith("}")) {
-                        throw new IllegalArgumentException("Input not recognized: " + lines.get(0));
+
+                // skip past { and don't include end }
+                int at = s.indexOf("{");
+                s = s.substring(at + 1, s.length() - 1);
+                String[] split = s.split(",");
+                for (String config : split) {
+                    if (!config.isEmpty() && !config.contains(STORE_DIR)) {
+                        configInserts.add(INDENT + config + ",");
                     }
                 }
-                else if (noSpace.equals("jetstream:enabled")) {
-                    parse = false;
-                }
-                else {
-                    throw new IllegalArgumentException("Input not recognized: " + lines.get(0));
-                }
-            }
-            else if (lines.size() == 2) {
-                String jetstream = lines.get(0).trim().replaceAll(" ", "");
-                String close = lines.get(1).trim().replaceAll(" ", "");
-                if (!jetstream.equals("jetstream{") || !close.equals("}")) {
-                    throw new IllegalArgumentException("Input not recognized: " + lines.get(0) + " | " + lines.get(1));
-                }
-                parse = false;
             }
         }
-
-        if (parse) {
-            // combine to make it easier to split apart
-            StringBuilder sb = new StringBuilder();
-            for (String line : lines) {
-                sb.append(line.trim());
-            }
-            // remove jetstream {
-            int at = sb.indexOf("{");
-            if (at != -1) {
-                sb.delete(0, at + 1);
-            }
-            at = sb.indexOf(",");
-            while (at != -1) {
-                String config = sb.substring(0, at).trim();
-                if (!config.contains(STORE_DIR)) {
-                    configInserts.add(INDENT + config);
-                }
-                sb.delete(0, at + 1);
-                at = sb.indexOf(",");
-            }
-
-            at = sb.indexOf("}");
-            String config = sb.substring(0, at).trim();
-            if (!config.contains(STORE_DIR)) {
-                configInserts.add(INDENT + config);
-            }
-            for (int i = 1; i < configInserts.size() - 1; i++) {
-                configInserts.add(i, configInserts.remove(i) + ",");
-            }
-        }
-
+        configInserts.add(INDENT + this.storeDir);
         configInserts.add("}");
     }
 

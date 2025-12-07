@@ -290,69 +290,46 @@ public class NatsServerRunnerTest extends TestBase {
     }
 
     @Test
-    public void testWithConfigParams_config_port_missing_ws_no() throws Exception {
-        _testWithConfigParams("config_port_missing_ws_no.conf", true);
-    }
-
-    @Test
-    public void testWithConfigParams_config_port_user_ws_no() throws Exception {
-        _testWithConfigParams("config_port_user_ws_no.conf", true);
-    }
-
-    @Test
-    public void testWithConfigParams_websocket() throws Exception {
-        _testWithConfigParams("websocket.conf", false);
-    }
-
-    @Test
-    public void testWithConfigParams_ws() throws Exception {
-        _testWithConfigParams("ws.conf", false);
-    }
-
-    @Test
     public void testWithConfigBuilder_config_port_missing_ws_no() throws Exception {
-        _testWithConfigBuilder("config_port_missing_ws_no.conf", true);
+        _testWithConfig("config_port_missing_ws_no.conf", false, true, true);
     }
 
     @Test
     public void testWithConfigBuilder_config_port_user_ws_no() throws Exception {
-        _testWithConfigBuilder("config_port_user_ws_no.conf", true);
+        _testWithConfig("config_port_user_ws_no.conf", false, true, true);
     }
 
     @Test
     public void testWithConfigBuilder_websocket() throws Exception {
-        _testWithConfigBuilder("websocket.conf", false);
+        _testWithConfig("websocket.conf", false, true, false);
     }
 
     @Test
     public void testWithConfigBuilder_ws() throws Exception {
-        _testWithConfigBuilder("ws.conf", false);
+        _testWithConfig("ws.conf", false, true, false);
     }
 
-    private void _testWithConfig(String configFile, boolean checkConnect, String[] configInserts, NatsServerRunner runner) throws IOException {
-        validateCommandLine(runner, false, false);
-        validateHostAndPort(runner);
-        validateConfigLines(runner, configFile, configInserts);
-        if (checkConnect) {
-            validateConnection(runner);
-        }
+    @Test
+    public void testComplex() throws Exception {
+        _testWithConfig("js_complex.conf", true, false, false);
     }
 
-    private void _testWithConfigParams(String configFile, boolean checkConnect) throws Exception {
-        String[] configInserts = { "# custom insert this comment " + configFile};
-        try (NatsServerRunner runner = new NatsServerRunner(SOURCE_CONFIG_FILE_PATH + configFile, configInserts, -1, false)) {
-            _testWithConfig(configFile, checkConnect, configInserts, runner);
-        }
-    }
-
-    private void _testWithConfigBuilder(String configFile, boolean checkConnect) throws Exception {
+    private void _testWithConfig(String configFile, boolean js, boolean validateMatchConfig, boolean checkConnect) throws Exception {
         String[] configInserts = { "# custom insert this comment " + configFile};
         try (NatsServerRunner runner = builder()
             .configFilePath(SOURCE_CONFIG_FILE_PATH + configFile)
             .configInserts(configInserts)
+            .dryRun(!checkConnect)
             .build())
         {
-            _testWithConfig(configFile, checkConnect, configInserts, runner);
+            validateCommandLine(runner, false, js);
+            validateHostAndPort(runner);
+            if (validateMatchConfig) {
+                validateConfigLines(runner, configFile, configInserts);
+            }
+            if (checkConnect) {
+                validateConnection(runner);
+            }
         }
     }
 
@@ -605,30 +582,24 @@ public class NatsServerRunnerTest extends TestBase {
     }
 
     @Test
-    public void testBuilderPortTakesPrecedence() throws Exception {
-        String[] configInserts = new String[] {"port:4777"};
+    public void testBuilderPortOverrides() throws Exception {
+        String[] configInserts = new String[] {"port:9999"};
 
-        NatsServerRunner.Builder b = builder()
-            .debug(false)
-            .jetstream(true)
+        NatsServerRunner runner = builder()
+            .dryRun()
             .configInserts(configInserts)
-            .port(4242)
-            .connectValidateTries(0)
-            ;
+            .port(2222)
+            .build();
 
-        try (NatsServerRunner runner = b.build()) {
-            List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
-            int portCount = 0;
-            int portFound = -1;
-            for (String line : lines) {
-                if (line.startsWith("port:")) {
-                    portCount++;
-                    portFound = Integer.parseInt(line.substring(5).trim());
-                }
-            }
-            assertEquals(4242, runner.getPort());
-            assertEquals(1, portCount);
-            assertEquals(4242, portFound);
+        assertEquals(2222, runner.getNatsPort());
+        assertEquals(1, runner.getConfigLines().size());
+        assertEquals("port: 2222", runner.getConfigLines().get(0));
+    }
+
+    static void basicRunnerDebug(NatsServerRunner runner) {
+        System.out.println(runner.getCmdLine());
+        for (String s : runner.getConfigLines()) {
+            System.out.println(s);
         }
     }
 
