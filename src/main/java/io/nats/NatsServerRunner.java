@@ -376,6 +376,7 @@ public class NatsServerRunner implements AutoCloseable {
                 }
 
                 if (b.configInserts != null) {
+                    boolean processJetstream = true;// the case where the inserts have a jetstream block and a jsEnabled
                     List<String> jsInserts = new ArrayList<>();
                     boolean inJsInserts = false;
                     for (String s : b.configInserts) {
@@ -387,19 +388,29 @@ public class NatsServerRunner implements AutoCloseable {
                             jsInserts.add(trim);
                             if (trim.endsWith("}")) {
                                 inJsInserts = false;
+                                processJetstream = false;
                                 _jsConfig.set(new JsConfig(jsInserts));
                             }
                         }
-                        else if (trim.startsWith("jetstream")) {
+                        else if (trim.startsWith("jetstream") && processJetstream) {
                             if (_jsConfig.get() != null) {
                                 throw new IOException("jetstream block provided in both config inserts and config file");
                             }
                             if (trim.endsWith("enabled")) {
                                 _jsConfig.set(new JsConfig());
+                                processJetstream = false;
                             }
                             else {
-                                inJsInserts = true;
                                 jsInserts.add(trim);
+                                if (trim.endsWith("}")) {
+                                    // a one-liner...
+                                    _jsConfig.set(new JsConfig(jsInserts));
+                                    processJetstream = false;
+                                }
+                                else {
+                                    inJsInserts = true;
+                                }
+
                             }
                         }
                         else {
