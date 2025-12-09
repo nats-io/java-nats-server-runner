@@ -30,7 +30,15 @@ public class TestBase {
     protected static final String SOURCE_CONFIG_FILE_PATH = "src/test/resources/";
 
     static {
+        quiet();
+    }
+
+    public static void quiet() {
         setDefaultOutputLevel(Level.WARNING);
+    }
+
+    public static void verbose() {
+        setDefaultOutputLevel(Level.ALL);
     }
 
     public static String localHostFromDefaultNoPort(String schema) {
@@ -49,11 +57,13 @@ public class TestBase {
         return natsLocalHostFromDefaultNoPort() + ":" + port;
     }
 
-    protected void validateBasics(NatsServerRunner runner, boolean debug, boolean jetStream) throws IOException {
+    protected void validateBasics(NatsServerRunner runner, boolean debug, boolean jetStream, boolean dryRun) throws IOException {
         validateCommandLine(runner, debug, jetStream);
         validateHostAndPort(runner);
         validateConfigLines(runner);
-        validateConnection(runner);
+        if (!dryRun) {
+            validateConnection(runner);
+        }
     }
 
     protected void validateCommandLine(NatsServerRunner runner, boolean debug, boolean jetStream, String... customArgs) {
@@ -120,5 +130,13 @@ public class TestBase {
         catch (IOException e) {
             fail(e);
         }
+    }
+
+    protected void validateNotConnected(NatsServerRunner runner) {
+        try {
+            NatsServerRunner.isServerReachable(runner.getNatsPort(), 200);
+            fail("Should not be able to connect");
+        }
+        catch (IOException expected) {}
     }
 }

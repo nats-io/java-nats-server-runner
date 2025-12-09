@@ -41,7 +41,9 @@ public class NatsServerRunner implements AutoCloseable {
     private final Output _displayOut;
     private final Map<String, Integer> _ports;
     private final File _configFile;
+    private final Builder _builder;
     private final List<String> _configLines;
+    private final List<String> _cmdList = new ArrayList<>();
     private final String _cmdLine;
     private final AtomicReference<JsConfig> _jsConfig;
     private Process process;
@@ -307,6 +309,7 @@ public class NatsServerRunner implements AutoCloseable {
     // ACTUAL CONSTRUCTION
     // ----------------------------------------------------------------------------------------------------
     protected NatsServerRunner(Builder b) throws IOException {
+        _builder = b;
         _executablePath = b.executablePath == null ? getResolvedServerPath() : b.executablePath.toString();
         _ports = b.ports;
         Integer tempPort = _ports.get(CONFIG_PORT_KEY);
@@ -335,16 +338,9 @@ public class NatsServerRunner implements AutoCloseable {
 
         _jsConfig = new AtomicReference<>();
 
-        int aliveCheckTries = b.aliveCheckTries == null ? DefaultProcessAliveCheckTries : b.aliveCheckTries;
-        long aliveCheckWait = b.aliveCheckWait == null ? DefaultProcessAliveCheckWait : b.aliveCheckWait;
-        int connectValidateTries = b.connectValidateTries == null ? DefaultConnectValidateTries : b.connectValidateTries;
-        long connectValidateTimeout = b.connectValidateTimeout == null ? DefaultConnectValidateTimeout : b.connectValidateTimeout;
         boolean allowCommandLineOnly = b.allowCommandLineOnly;
-        OutputThreadProvider otp = b.outputThreadProvider == null ? DefaultOutputThreadProvider : b.outputThreadProvider;
-        String id = b.customName == null ? Integer.toHexString(hashCode()).toUpperCase() : b.customName;
 
-        List<String> cmd = new ArrayList<>();
-        cmd.add(_executablePath);
+        _cmdList.add(_executablePath);
 
         try {
             if (allowCommandLineOnly
@@ -353,8 +349,8 @@ public class NatsServerRunner implements AutoCloseable {
                 && b.configInserts == null)
             {
                 int port = getPort();
-                cmd.add("--port");
-                cmd.add(Integer.toString(port));
+                _cmdList.add("--port");
+                _cmdList.add(Integer.toString(port));
                 _configFile = null;
                 _configLines = null;
                 _ports.put(NATS_PORT_KEY, port);
@@ -392,8 +388,8 @@ public class NatsServerRunner implements AutoCloseable {
                 writer.flush();
                 writer.close();
 
-                cmd.add(CONFIG_FILE_OPTION_NAME);
-                cmd.add(_configFile.getAbsolutePath());
+                _cmdList.add(CONFIG_FILE_OPTION_NAME);
+                _cmdList.add(_configFile.getAbsolutePath());
             }
         }
         catch (IOException ioe) {
@@ -402,25 +398,37 @@ public class NatsServerRunner implements AutoCloseable {
         }
 
         if (b.jetstream || _jsConfig.get() != null) {
-            cmd.add(JETSTREAM_OPTION);
+            _cmdList.add(JETSTREAM_OPTION);
         }
 
         if (b.customArgs != null) {
-            cmd.addAll(b.customArgs);
+            _cmdList.addAll(b.customArgs);
         }
 
         if (b.debugLevel != null) {
-            cmd.add(b.debugLevel.getCmdOption());
+            _cmdList.add(b.debugLevel.getCmdOption());
         }
 
-        _cmdLine = String.join(" ", cmd);
+        _cmdLine = String.join(" ", _cmdList);
 
         if (b.dryRun) {
             return;
         }
 
+        //noinspection resource
+        connect();
+    }
+
+    public NatsServerRunner connect() {
+        String id = _builder.customName == null ? Integer.toHexString(hashCode()).toUpperCase() : _builder.customName;
+        int aliveCheckTries = _builder.aliveCheckTries == null ? DefaultProcessAliveCheckTries : _builder.aliveCheckTries;
+        long aliveCheckWait = _builder.aliveCheckWait == null ? DefaultProcessAliveCheckWait : _builder.aliveCheckWait;
+        int connectValidateTries = _builder.connectValidateTries == null ? DefaultConnectValidateTries : _builder.connectValidateTries;
+        long connectValidateTimeout = _builder.connectValidateTimeout == null ? DefaultConnectValidateTimeout : _builder.connectValidateTimeout;
+        OutputThreadProvider otp = _builder.outputThreadProvider == null ? DefaultOutputThreadProvider : _builder.outputThreadProvider;
+
         try {
-            ProcessBuilder pb = new ProcessBuilder(cmd);
+            ProcessBuilder pb = new ProcessBuilder(_cmdList);
             pb.redirectErrorStream(true);
             pb.redirectError(ProcessBuilder.Redirect.PIPE);
             pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
@@ -486,7 +494,7 @@ public class NatsServerRunner implements AutoCloseable {
                 }
             }
 
-            if (b.fullErrorReportOnStartup) {
+            if (_builder.fullErrorReportOnStartup) {
                 if (nol != null) {
                     for (String line : nol.getStartupLines()) {
                         exMessage.append(System.lineSeparator()).append(line);
@@ -519,6 +527,8 @@ public class NatsServerRunner implements AutoCloseable {
 
             throw new IllegalStateException(exMessage.toString(), t);
         }
+
+        return this;
     }
 
     public static void isServerReachable(int port, long timeoutMs) throws IOException {
