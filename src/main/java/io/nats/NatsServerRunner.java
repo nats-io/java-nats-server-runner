@@ -411,15 +411,16 @@ public class NatsServerRunner implements AutoCloseable {
 
         _cmdLine = String.join(" ", _cmdList);
 
-        if (b.dryRun) {
-            return;
+        if (b.autoStart) {
+            //noinspection resource
+            start();
         }
-
-        //noinspection resource
-        connect();
     }
 
-    public NatsServerRunner connect() {
+    public NatsServerRunner start() {
+        if (process != null) {
+            return this; // already started. Could have thrown an exception but chose to just return.
+        }
         String id = _builder.customName == null ? Integer.toHexString(hashCode()).toUpperCase() : _builder.customName;
         int aliveCheckTries = _builder.aliveCheckTries == null ? DefaultProcessAliveCheckTries : _builder.aliveCheckTries;
         long aliveCheckWait = _builder.aliveCheckWait == null ? DefaultProcessAliveCheckWait : _builder.aliveCheckWait;
@@ -791,7 +792,7 @@ public class NatsServerRunner implements AutoCloseable {
         boolean fullErrorReportOnStartup = true;
         String customName;
         OutputThreadProvider outputThreadProvider;
-        boolean dryRun = false;
+        boolean autoStart = true;
 
         public Builder port(Integer port) {
             return port(NatsRunnerUtils.CONFIG_PORT_KEY, port);
@@ -949,13 +950,13 @@ public class NatsServerRunner implements AutoCloseable {
             return this;
         }
 
-        public Builder dryRun(boolean dryRun) {
-            this.dryRun = dryRun;
+        public Builder autoStart(boolean autoStart) {
+            this.autoStart = autoStart;
             return this;
         }
 
-        public Builder dryRun() {
-            this.dryRun = true;
+        public Builder doNotStart() {
+            this.autoStart = false;
             return this;
         }
 

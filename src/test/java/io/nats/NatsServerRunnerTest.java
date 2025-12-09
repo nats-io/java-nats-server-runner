@@ -33,67 +33,67 @@ import static org.junit.jupiter.api.Assertions.*;
 public class NatsServerRunnerTest extends TestBase {
     @Test
     public void testDefaultConstructor() throws Exception {
-        validateVariousConstructors(false, false, false, NatsServerRunner::new);
+        validateVariousConstructors(false, false, NatsServerRunner::new);
     }
 
     @Test
     public void testDefaultBuilder() throws Exception {
-        validateVariousConstructors(false, false, false, () -> builder().build());
+        validateVariousConstructors(false, false, () -> builder().build());
     }
 
     @Test
     public void testDebugConstructorFalse() throws Exception {
-        validateVariousConstructors(false, false, false, () -> new NatsServerRunner(false));
+        validateVariousConstructors(false, false, () -> new NatsServerRunner(false));
     }
 
     @Test
     public void testDebugConstructorTrue() throws Exception {
-        validateVariousConstructors(true, false, false, () -> new NatsServerRunner(true));
+        validateVariousConstructors(true, false, () -> new NatsServerRunner(true));
     }
 
     @Test
     public void testDebugJsConstructorFalseFalse() throws Exception {
-        validateVariousConstructors(false, false, false, () -> new NatsServerRunner(false, false));
+        validateVariousConstructors(false, false, () -> new NatsServerRunner(false, false));
     }
 
     @Test
     public void testDebugJsConstructorTrueFalse() throws Exception {
-        validateVariousConstructors(true, false, false, () -> new NatsServerRunner(true, false));
+        validateVariousConstructors(true, false, () -> new NatsServerRunner(true, false));
     }
 
     @Test
     public void testDebugJsConstructorFalseTrue() throws Exception {
-        validateVariousConstructors(false, true, false, () -> new NatsServerRunner(false, true));
+        validateVariousConstructors(false, true, () -> new NatsServerRunner(false, true));
     }
 
     @Test
     public void testDebugJsConstructorTrueTrue() throws Exception {
-        validateVariousConstructors(true, true, false, () -> new NatsServerRunner(true, true));
+        validateVariousConstructors(true, true, () -> new NatsServerRunner(true, true));
     }
 
     @Test
     public void testDebugJsBuilderFalseFalse() throws Exception {
-        validateVariousConstructors(false, false, false, () -> builder().debug(false).jetstream(false).build());
+        validateVariousConstructors(false, false, () -> builder().debug(false).jetstream(false).build());
     }
 
     @Test
     public void testDebugJsBuilderTrueFalse() throws Exception {
-        validateVariousConstructors(true, false, false, () -> builder().debug(true).jetstream(false).build());
+        validateVariousConstructors(true, false, () -> builder().debug(true).jetstream(false).build());
     }
 
     @Test
     public void testDebugJsBuilderFalseTrue() throws Exception {
-        validateVariousConstructors(false, true, false, () -> builder().debug(false).jetstream(true).build());
+        validateVariousConstructors(false, true, () -> builder().debug(false).jetstream(true).build());
     }
 
     @Test
     public void testDebugJsBuilderTrueTrue() throws Exception {
-        validateVariousConstructors(true, true, false, () -> builder().debug(true).jetstream(true).build());
+        validateVariousConstructors(true, true, () -> builder().debug(true).jetstream(true).build());
     }
 
     @Test
     public void testDebugJsNewAndBuilderAndBuildOptionsFalseFalse() throws Exception {
-        validateVariousConstructors(false, false, false, () -> {
+        validateVariousConstructors(false, false, () -> {
             try {
                 return new NatsServerRunner(builder().debug(false).jetstream(false).buildOptions());
             }
@@ -105,7 +105,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testDebugJsNewAndBuilderAndBuildOptionsTrueFalse() throws Exception {
-        validateVariousConstructors(true, false, false, () -> {
+        validateVariousConstructors(true, false, () -> {
             try {
                 return new NatsServerRunner(builder().debug(true).jetstream(false).buildOptions());
             }
@@ -117,7 +117,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testDebugJsNewAndBuilderAndBuildOptionsFalseTrue() throws Exception {
-        validateVariousConstructors(false, true, false, () -> {
+        validateVariousConstructors(false, true, () -> {
             try {
                 return new NatsServerRunner(builder().debug(false).jetstream(true).buildOptions());
             }
@@ -129,7 +129,7 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testDebugJsNewAndBuilderAndBuildOptionsTrueTrue() throws Exception {
-        validateVariousConstructors(true, true, false, () -> {
+        validateVariousConstructors(true, true, () -> {
             try {
                 return new NatsServerRunner(builder().debug(true).jetstream(true).buildOptions());
             }
@@ -141,108 +141,108 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testDebugConstructorNullConfigFileFalse() throws Exception {
-        validateVariousConstructors(false, false, false, () -> new NatsServerRunner((String) null, false));
+        validateVariousConstructors(false, false, () -> new NatsServerRunner((String) null, false));
     }
 
     @Test
     public void testDebugConstructorNullConfigFileTrue() throws Exception {
-        validateVariousConstructors(true, false, false, () -> new NatsServerRunner((String) null, true));
+        validateVariousConstructors(true, false, () -> new NatsServerRunner((String) null, true));
     }
 
     @Test
     public void testDebugJsConstructorNullConfigFalseFalse() throws Exception {
-        validateVariousConstructors(false, false, false, () -> new NatsServerRunner((String)null, false, false));
+        validateVariousConstructors(false, false, () -> new NatsServerRunner((String)null, false, false));
     }
 
     @Test
     public void testDebugJsConstructorNullConfigTrueFalse() throws Exception {
-        validateVariousConstructors(true, false, false, () -> new NatsServerRunner((String)null, true, false));
+        validateVariousConstructors(true, false, () -> new NatsServerRunner((String)null, true, false));
     }
 
     @Test
     public void testDebugJsConstructorNullConfigFalseTrue() throws Exception {
-        validateVariousConstructors(false, true, false, () -> new NatsServerRunner((String)null, false, true));
+        validateVariousConstructors(false, true, () -> new NatsServerRunner((String)null, false, true));
     }
 
     @Test
     public void testDebugJsConstructorNullConfigTrueTrue() throws Exception {
-        validateVariousConstructors(true, true, false, () -> new NatsServerRunner((String)null, true, true));
+        validateVariousConstructors(true, true, () -> new NatsServerRunner((String)null, true, true));
     }
 
     @Test
     public void testConstructorNullCustom() throws Exception {
-        validateVariousConstructors(false, false, false, () -> new NatsServerRunner((String[])null));
+        validateVariousConstructors(false, false, () -> new NatsServerRunner((String[])null));
     }
 
     @Test
     public void testDebugConstructorNullCustomFalse() throws Exception {
-        validateVariousConstructors(false, false, false, () -> new NatsServerRunner((String[])null, false));
+        validateVariousConstructors(false, false, () -> new NatsServerRunner((String[])null, false));
     }
 
     @Test
     public void testDebugConstructorNullCustomTrue() throws Exception {
-        validateVariousConstructors(true, false, false, () -> new NatsServerRunner((String[])null, true));
+        validateVariousConstructors(true, false, () -> new NatsServerRunner((String[])null, true));
     }
 
     @Test
     public void testDebugJsConstructorNullCustomFalseFalse() throws Exception {
-        validateVariousConstructors(false, false, false, () -> new NatsServerRunner((String[])null, false, false));
+        validateVariousConstructors(false, false, () -> new NatsServerRunner((String[])null, false, false));
     }
 
     @Test
     public void testDebugJsConstructorNullCustomTrueFalse() throws Exception {
-        validateVariousConstructors(true, false, false, () -> new NatsServerRunner((String[])null, true, false));
+        validateVariousConstructors(true, false, () -> new NatsServerRunner((String[])null, true, false));
     }
 
     @Test
     public void testDebugJsConstructorNullCustomFalseTrue() throws Exception {
-        validateVariousConstructors(false, true, false, () -> new NatsServerRunner((String[])null, false, true));
+        validateVariousConstructors(false, true, () -> new NatsServerRunner((String[])null, false, true));
     }
 
     @Test
     public void testDebugJsConstructorNullCustomTrueTrue() throws Exception {
-        validateVariousConstructors(true, true, false, () -> new NatsServerRunner((String[])null, true, true));
+        validateVariousConstructors(true, true, () -> new NatsServerRunner((String[])null, true, true));
     }
 
     @Test
     public void testDebugConstructorNextPortFalse() throws Exception {
         int port = nextPort();
-        NatsServerRunner runner = validateVariousConstructors(false, false, false, () -> new NatsServerRunner(port, false));
+        NatsServerRunner runner = validateVariousConstructors(false, false, () -> new NatsServerRunner(port, false));
         assertEquals(port, runner.getPort());
     }
 
     @Test
     public void testDebugConstructorNextPortTrue() throws Exception {
         int port = nextPort();
-        NatsServerRunner runner = validateVariousConstructors(true, false, false, () -> new NatsServerRunner(port, true));
+        NatsServerRunner runner = validateVariousConstructors(true, false, () -> new NatsServerRunner(port, true));
         assertEquals(port, runner.getPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortFalseFalse() throws Exception {
         int port = nextPort();
-        NatsServerRunner runner = validateVariousConstructors(false, false, false, () -> new NatsServerRunner(port, false, false));
+        NatsServerRunner runner = validateVariousConstructors(false, false, () -> new NatsServerRunner(port, false, false));
         assertEquals(port, runner.getPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortTrueFalse() throws Exception {
         int port = nextPort();
-        NatsServerRunner runner = validateVariousConstructors(true, false, false, () -> new NatsServerRunner(port, true, false));
+        NatsServerRunner runner = validateVariousConstructors(true, false, () -> new NatsServerRunner(port, true, false));
         assertEquals(port, runner.getPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortFalseTrue() throws Exception {
         int port = nextPort();
-        NatsServerRunner runner = validateVariousConstructors(false, true, false, () -> new NatsServerRunner(port, false, true));
+        NatsServerRunner runner = validateVariousConstructors(false, true, () -> new NatsServerRunner(port, false, true));
         assertEquals(port, runner.getPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortTrueTrue() throws Exception {
         int port = nextPort();
-        NatsServerRunner runner = validateVariousConstructors(true, true, false, () -> new NatsServerRunner(port, true, true));
+        NatsServerRunner runner = validateVariousConstructors(true, true, () -> new NatsServerRunner(port, true, true));
         assertEquals(port, runner.getPort());
     }
 
@@ -250,9 +250,9 @@ public class NatsServerRunnerTest extends TestBase {
         NatsServerRunner get() throws IOException;
     }
 
-    private NatsServerRunner validateVariousConstructors(boolean debug, boolean jetStream, boolean dryRun, RunnerSupplier supplier) throws Exception {
+    private NatsServerRunner validateVariousConstructors(boolean debug, boolean jetStream, RunnerSupplier supplier) throws Exception {
         NatsServerRunner runner = supplier.get();
-        validateBasics(runner, debug, jetStream, dryRun);
+        validateBasics(runner, debug, jetStream, true);
         assertTrue(runner.getExecutablePath().contains("nats-server"));
         String cmd = runner.getCmdLine();
         assertEquals(debug, cmd.contains(" -DV"));
@@ -262,16 +262,16 @@ public class NatsServerRunnerTest extends TestBase {
     }
 
     @Test
-    public void testConnect() throws Exception {
-        NatsServerRunner runner = builder().jetstream().dryRun().build();
-        validateBasics(runner, false, true, true);
-        validateNotConnected(runner);
-        runner.connect();
+    public void testStart() throws Exception {
+        NatsServerRunner runner = builder().jetstream().doNotStart().build();
         validateBasics(runner, false, true, false);
+        validateNotConnected(runner);
+        runner.start();
+        validateBasics(runner, false, true, true);
         runner.close();
         validateNotConnected(runner);
-        runner.connect();
-        validateBasics(runner, false, true, false);
+        runner.start();
+        validateBasics(runner, false, true, true);
         runner.close();
         validateNotConnected(runner);
     }
@@ -334,7 +334,7 @@ public class NatsServerRunnerTest extends TestBase {
         try (NatsServerRunner runner = builder()
             .configFilePath(SOURCE_CONFIG_FILE_PATH + configFile)
             .configInserts(configInserts)
-            .dryRun(!checkConnect)
+            .autoStart(checkConnect)
             .build())
         {
             validateCommandLine(runner, false, js);
@@ -601,7 +601,7 @@ public class NatsServerRunnerTest extends TestBase {
         String[] configInserts = new String[] {"port:9999"};
 
         NatsServerRunner runner = builder()
-            .dryRun()
+            .doNotStart()
             .configInserts(configInserts)
             .port(2222)
             .build();
@@ -644,7 +644,7 @@ public class NatsServerRunnerTest extends TestBase {
     private void testJsStorage(String conf, boolean setJetstream) throws Exception {
         try (NatsServerRunner runner = builder()
             .jetstream(setJetstream)
-            .dryRun()
+            .doNotStart()
             .configFilePath(conf)
             .build())
         {
@@ -697,13 +697,13 @@ public class NatsServerRunnerTest extends TestBase {
         JsConfig jsConfig = new JsConfig();
         try (NatsServerRunner runner = builder()
             .jetstream()
-            .dryRun()
+            .doNotStart()
             .configInserts(jsConfig.configInserts)
             .build()) {
             validateJsStorage(runner);
         }
         try (NatsServerRunner runner = builder()
-            .dryRun()
+            .doNotStart()
             .configInserts(jsConfig.configInserts)
             .build()) {
             validateJsStorage(runner);

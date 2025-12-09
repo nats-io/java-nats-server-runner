@@ -57,11 +57,11 @@ public class TestBase {
         return natsLocalHostFromDefaultNoPort() + ":" + port;
     }
 
-    protected void validateBasics(NatsServerRunner runner, boolean debug, boolean jetStream, boolean dryRun) throws IOException {
+    protected void validateBasics(NatsServerRunner runner, boolean debug, boolean jetStream, boolean serverIsRunning) throws IOException {
         validateCommandLine(runner, debug, jetStream);
         validateHostAndPort(runner);
         validateConfigLines(runner);
-        if (!dryRun) {
+        if (serverIsRunning) {
             validateConnection(runner);
         }
     }
