@@ -5,30 +5,33 @@ plugins {
     id("java-library")
     id("maven-publish")
     id("jacoco")
-    id("biz.aQute.bnd.builder") version "7.1.0"
+    id("biz.aQute.bnd.builder") version "7.2.1"
     id("org.gradle.test-retry") version "1.6.4"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("signing")
 }
 
-def jarVersion = "3.0.2"
+def jarVersion = "3.0.3"
 group = 'io.nats'
 
 def isRelease = System.getenv("BUILD_EVENT") == "release"
 def tc = System.getenv("TARGET_COMPATIBILITY");
-def targetCompat = tc == "21" ? JavaVersion.VERSION_21 : (tc == "17" ? JavaVersion.VERSION_17 : JavaVersion.VERSION_1_8)
-def jarEnd =       tc == "21" ?  "-jdk21"              : (tc == "17" ? "-jdk17"               : "")
-def jarAndArtifactName = "jnats-server-runner" + jarEnd
+def targetJavaVersion = tc == null ? JavaVersion.VERSION_1_8 : JavaVersion.toVersion(tc)
+def targetId = targetJavaVersion.toString()
+def artifact = "jnats-server-runner" + (targetJavaVersion == JavaVersion.VERSION_1_8 ? "" : "-jdk" + targetId)
+def bundleName = "io.nats.jnats.server.runner" + (targetJavaVersion == JavaVersion.VERSION_1_8 ? "" : ".jdk" + targetId)
+
+System.out.println("target compatibility: Java " + targetJavaVersion)
+System.out.println("artifact id         : " + artifact)
+System.out.println("bundle name         : " + bundleName)
 
 version = isRelease ? jarVersion : jarVersion + "-SNAPSHOT" // version is the variable the build actually uses.
 
-System.out.println("Java: " + System.getProperty("java.version"))
-System.out.println("Target Compatibility: " + targetCompat)
-System.out.println(group + ":" + jarAndArtifactName + ":" + version)
-
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = targetCompat
+    targetCompatibility = targetJavaVersion
+    withSourcesJar()
+    withJavadocJar()
 }
 
 repositories {
@@ -54,9 +57,9 @@ jar {
     bundle {
         bnd("Bundle-Name": "io.nats.jnats.server.runner",
                 "Bundle-Vendor": "nats.io",
-                "Bundle-Description": "NATS.IO Java Server Runner",
+                "Bundle-Description": "Java NATS Server Runner",
                 "Bundle-DocURL": "https://github.com/nats-io/java-nats-server-runner",
-                "Target-Compatibility": "Java " + targetCompat
+                "Target-Compatibility": "Java " + targetJavaVersion
         )
     }
 }
@@ -80,26 +83,12 @@ javadoc {
     failOnError = false
     options.overview = 'src/main/javadoc/overview.html' // relative to source root
     source = sourceSets.main.allJava
-    title = "NATS.IO Java Server Runner"
+    title = "Java NATS Server Runner"
     classpath = sourceSets.main.runtimeClasspath
 }
 
-tasks.register('javadocJar', Jar) {
-    archiveClassifier.set('javadoc')
-    from javadoc
-}
-
-tasks.register('sourcesJar', Jar) {
-    archiveClassifier.set('sources')
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives javadocJar, sourcesJar
-}
-
 jacoco {
-    toolVersion = "0.8.12"
+    toolVersion = "0.8.13"
 }
 
 jacocoTestReport {
@@ -124,21 +113,21 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            artifact sourcesJar
-            artifact javadocJar
             pom {
-                name = jarAndArtifactName
-                packaging = "jar"
-                groupId = group
-                artifactId = jarAndArtifactName
-                description = "Java NATS.io Server Runner"
+                name = "Java NATS Server Runner"
+                description = "Java NATS Server Runner"
                 url = 'https://github.com/nats-io/java-nats-server-runner'
+
+                groupId = group
+                artifactId = artifact
+
                 licenses {
                     license {
                         name = 'The Apache License, Version 2.0'
                         url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                     }
                 }
+
                 developers {
                     developer {
                         id = "synadia"
