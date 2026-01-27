@@ -4,6 +4,8 @@
 
 Run the [NATS messaging system](https://nats.io) Server from your Java code. 
 
+Useful for running unit or integration tests on the localhost.
+
 
 ![3.1.0](https://img.shields.io/badge/Current_Release-3.1.0-27AAE0?style=for-the-badge)
 ![3.1.1](https://img.shields.io/badge/Current_Snapshot-3.1.1--SNAPSHOT-27AAE0?style=for-the-badge)
@@ -24,8 +26,6 @@ It creates different artifacts for each. All have the same group id `io.nats` an
 |        17         | `jnats-server-runner-jdk17` | [![Maven JDK 17](https://img.shields.io/maven-central/v/io.nats/jnats-server-runner-jdk17?label=)](https://mvnrepository.com/artifact/io.nats/jnats-server-runner-jdk17) |
 |        21         | `jnats-server-runner-jdk21` | [![Maven JDK 21](https://img.shields.io/maven-central/v/io.nats/jnats-server-runner-jdk21?label=)](https://mvnrepository.com/artifact/io.nats/jnats-server-runner-jdk21) |
 |        25         | `jnats-server-runner-jdk25` | [![Maven JDK 25](https://img.shields.io/maven-central/v/io.nats/jnats-server-runner-jdk25?label=)](https://mvnrepository.com/artifact/io.nats/jnats-server-runner-jdk25) |
-
-Useful for running unit or integration tests on the localhost.
 
 ### Executable
 
@@ -80,15 +80,36 @@ catch (Exception e) {
 If you want to run multiple instances of the server, for instance, in unit tests, you can do
 some setup statically to reduce the code in the builders. A simple way to do this would be
 to have a static initializer in a base test class or something that is called before all uses.
-There are 3 methods available:
+There are several methods available in `NatsRunnerUtils` and can be overridden from the builder, 
+except setting the server path. 
 
 ```java
 static {
-    NatsServerRunner.setDefaultOutputSupplier(ConsoleOutput::new);
-    NatsServerRunner.setDefaultOutputLevel(Level.WARNING);
-    NatsServerRunner.setPreferredServerPath("/path/to/nats-server");
+    NatsRunnerUtils.setDefaultOutputSupplier(ConsoleOutput::new);
+    NatsRunnerUtils.setDefaultOutputLevel(Level.SEVERE); // will reduce the output, nice for tests
+    NatsRunnerUtils.setDefaultProcessAliveCheckTries(10);
+    NatsRunnerUtils.setDefaultProcessAliveCheckWait(100);
+    NatsRunnerUtils.setDefaultConnectValidateTries(3);
+    NatsRunnerUtils.setDefaultConnectValidateTimeout(100); // milliseconds
+    NatsRunnerUtils.setDefaultOutputThreadProvider(myOutputThreadProvider);
+    NatsRunnerUtils.setManualStartPort(1234); // the port used to initialize the port number for auto generated port numbers
+    NatsRunnerUtils.setDefaultLocalhostHost(LocalHost.name);
+    NatsRunnerUtils.setPreferredServerPath("/path/to/nats-server");
 }
 ```
+
+### nats-server path
+
+To start the NATS server, the program must know the way to run the `nats-server` executable.
+By default, it assumes it is in the path and just tries `nats-server`. You can tell the program
+where to find the server in two ways. 
+1. Call `NatsRunnerUtils.setPreferredServerPath` statically
+2. Set the `nats_server_path` environment variable.
+
+The program uses the set path first if it was set. 
+If it was not set, it tries the environment path if it was set. 
+Last, if neither was set it uses the default.
+
 
 ### Dependency Management
 
