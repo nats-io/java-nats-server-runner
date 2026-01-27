@@ -1,5 +1,6 @@
 name: Build Pull Request
-
+permissions:
+  contents: read
 on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
