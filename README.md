@@ -4,14 +4,26 @@
 
 Run the [NATS messaging system](https://nats.io) Server from your Java code. 
 
-**Current Release**: 3.0.1 &nbsp; **Current Snapshot**: 3.0.2-SNAPSHOT
 
-[![License Apache 2](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.nats/jnats-server-runner/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.nats/jnats-server-runner)
-[![Javadoc](http://javadoc.io/badge/io.nats/jnats-server-runner.svg?branch=main)](http://javadoc.io/doc/io.nats/jnats-server-runner?branch=main)
-[![Coverage Status](https://coveralls.io/repos/github/nats-io/java-nats-server-runner/badge.svg?branch=main)](https://coveralls.io/github/nats-io/java-nats-server-runner?branch=main)
+![3.0.2](https://img.shields.io/badge/Current_Release-3.0.2-27AAE0?style=for-the-badge)
+![3.0.3](https://img.shields.io/badge/Current_Snapshot-3.0.3--SNAPSHOT-27AAE0?style=for-the-badge)
+
 [![Build Main Badge](https://github.com/nats-io/java-nats-server-runner/actions/workflows/build-main.yml/badge.svg?event=push)](https://github.com/nats-io/java-nats-server-runner/actions/workflows/build-main.yml)
-[![Release Badge](https://github.com/nats-io/java-nats-server-runner/actions/workflows/build-release.yml/badge.svg?event=release)](https://github.com/nats-io/java-nats-server-runner/actions/workflows/build-release.yml)
+[![Coverage Status](https://coveralls.io/repos/github/nats-io/java-nats-server-runner/badge.svg?branch=main)](https://coveralls.io/github/nats-io/java-nats-server-runner?branch=main)
+[![Javadoc](http://javadoc.io/badge/io.nats/jnats-server-runner.svg?branch=main)](http://javadoc.io/doc/io.nats/jnats-server-runner?branch=main)
+[![License Apache 2](https://img.shields.io/badge/License-Apache2-blue)](https://www.apache.org/licenses/LICENSE-2.0)
+
+### JDK Version
+
+This project uses Java 8 Language Level api, but builds jars compiled with and targeted for Java 8, 17, 21 and 25.
+It creates different artifacts for each. All have the same group id `io.nats` and the same version but have different artifact names.
+
+| Java Target Level | Artifact Id                 |                                                                              Maven Central                                                                               |
+|:-----------------:|-----------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+|        1.8        | `jnats-server-runner`       |      [![Maven JDK 1_8](https://img.shields.io/maven-central/v/io.nats/jnats-server-runner?label=)](https://mvnrepository.com/artifact/io.nats/jnats-server-runner)       |
+|        17         | `jnats-server-runner-jdk17` | [![Maven JDK 17](https://img.shields.io/maven-central/v/io.nats/jnats-server-runner-jdk17?label=)](https://mvnrepository.com/artifact/io.nats/jnats-server-runner-jdk17) |
+|        21         | `jnats-server-runner-jdk21` | [![Maven JDK 21](https://img.shields.io/maven-central/v/io.nats/jnats-server-runner-jdk21?label=)](https://mvnrepository.com/artifact/io.nats/jnats-server-runner-jdk21) |
+|        25         | `jnats-server-runner-jdk25` | [![Maven JDK 25](https://img.shields.io/maven-central/v/io.nats/jnats-server-runner-jdk25?label=)](https://mvnrepository.com/artifact/io.nats/jnats-server-runner-jdk25) |
 
 Useful for running unit or integration tests on the localhost.
 
@@ -76,6 +88,90 @@ static {
     NatsServerRunner.setDefaultOutputLevel(Level.WARNING);
     NatsServerRunner.setPreferredServerPath("/path/to/nats-server");
 }
+```
+
+### Dependency Management
+
+The JNATS Server Runner is available in the Maven central repository,
+and can be imported as a standard dependency in your `build.gradle` or `pom.xml` file,
+The examples shown use the Jdk 8 version. To use other versions, change the artifact id.
+
+#### Gradle
+
+```groovy
+dependencies {
+    implementation 'io.nats:jnats-server-runner:3.0.3'
+}
+```
+
+If you need the latest and greatest before Maven central updates, you can use:
+
+```groovy
+repositories {
+    mavenCentral()
+    maven {
+        url "https://repo1.maven.org/maven2/"
+    }
+}
+```
+
+If you need a snapshot version, you must add the url for the snapshots and change your dependency.
+
+```groovy
+repositories {
+    mavenCentral()
+    maven {
+        url "https://central.sonatype.com/repository/maven-snapshots"
+    }
+}
+
+dependencies {
+   implementation 'io.nats:jnats-server-runner:3.0.4-SNAPSHOT'
+}
+```
+
+#### Maven
+
+```xml
+<dependency>
+    <groupId>io.nats</groupId>
+    <artifactId>jnats-server-runner</artifactId>
+    <version>3.0.3</version>
+</dependency>
+```
+
+If you need the absolute latest, before it propagates to maven central, you can use the repository:
+
+```xml
+<repositories>
+    <repository>
+        <id>sonatype releases</id>
+        <url>https://repo1.maven.org/maven2/</url>
+        <releases>
+           <enabled>true</enabled>
+        </releases>
+    </repository>
+</repositories>
+```
+
+If you need a snapshot version, you must enable snapshots and change your dependency.
+
+```xml
+<repositories>
+    <repository>
+        <id>sonatype snapshots</id>
+        <url>https://central.sonatype.com/repository/maven-snapshots</url>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+
+<dependency>
+    <groupId>io.nats</groupId>
+    <artifactId>jnats-server-runner</artifactId>
+    <version>3.0.4-SNAPSHOT</version>
+</dependency>
 ```
 
 ## License

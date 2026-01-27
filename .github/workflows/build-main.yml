@@ -1,5 +1,6 @@
 name: Build Main
-
+permissions:
+  contents: read
 on:
   push:
     branches:
@@ -7,9 +8,13 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        tc: [ 8, 17, 21, 25 ]
     runs-on: ubuntu-latest
     env:
       BUILD_EVENT: ${{ github.event_name }}
+      TARGET_COMPATIBILITY: ${{ matrix.tc }}
       OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
       OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
       SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
@@ -19,12 +24,12 @@ jobs:
       - name: Setup JDK
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: 25
           distribution: 'temurin'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
         with:
-          gradle-version: '8.14' # Quotes required to prevent YAML converting to number
+          gradle-version: current
       - name: Setup GO
         uses: actions/setup-go@v5
         with:
@@ -48,8 +53,21 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          parallel: true
+          flag-name: tc${{ matrix.tc }}
       - name: Publish Snapshot
         run: ./gradlew -i publishToSonatype
       - name: Clean up
         if: always()
         run: pkill -9 nats-server 2>/dev/null || true
+
+  coveralls-finish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finish
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+          carryforward: "tc8"
