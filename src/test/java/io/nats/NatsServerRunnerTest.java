@@ -306,30 +306,35 @@ public class NatsServerRunnerTest extends TestBase {
 
     @Test
     public void testWithConfigBuilder_config_port_missing_ws_no() throws Exception {
-        _testWithConfig("config_port_missing_ws_no.conf", false, true, true);
+        _testWithConfig("config_port_missing_ws_no.conf", false, true, true, false, false);
     }
 
     @Test
     public void testWithConfigBuilder_config_port_user_ws_no() throws Exception {
-        _testWithConfig("config_port_user_ws_no.conf", false, true, true);
+        _testWithConfig("config_port_user_ws_no.conf", false, true, true, true, false);
     }
 
     @Test
     public void testWithConfigBuilder_websocket() throws Exception {
-        _testWithConfig("websocket.conf", false, true, false);
+        _testWithConfig("websocket.conf", false, true, false, false, true);
     }
 
     @Test
     public void testWithConfigBuilder_ws() throws Exception {
-        _testWithConfig("ws.conf", false, true, false);
+        _testWithConfig("ws.conf", false, true, false, false, true);
+    }
+
+    @Test
+    public void testWithConfigBuilder_ws_and_user() throws Exception {
+        _testWithConfig("ws_and_user.conf", false, true, false, true, true);
     }
 
     @Test
     public void testComplex() throws Exception {
-        _testWithConfig("js_complex.conf", true, false, false);
+        _testWithConfig("js_complex.conf", true, false, false, true, false);
     }
 
-    private void _testWithConfig(String configFile, boolean js, boolean validateMatchConfig, boolean checkConnect) throws Exception {
+    private void _testWithConfig(String configFile, boolean js, boolean validateMatchConfig, boolean checkConnect, boolean natsPortSet, boolean nonNatsPortSet) throws Exception {
         String[] configInserts = { "# custom insert this comment " + configFile};
         try (NatsServerRunner runner = builder()
             .configFilePath(SOURCE_CONFIG_FILE_PATH + configFile)
@@ -344,6 +349,21 @@ public class NatsServerRunnerTest extends TestBase {
             }
             if (checkConnect) {
                 validateConnection(runner);
+            }
+
+            assertEquals(-1, runner.getConfigPort());
+            assertNotEquals(-1, runner.getUserPort());
+
+            if (natsPortSet) {
+                assertNotEquals(-1, runner.getNatsPort());
+            }
+
+            if (nonNatsPortSet) {
+                assertNotEquals(-1, runner.getNonNatsPort());
+                assertNotEquals(runner.getNatsPort(), runner.getNonNatsPort());
+            }
+            else {
+                assertEquals(-1, runner.getNonNatsPort());
             }
         }
     }

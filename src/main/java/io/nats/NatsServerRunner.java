@@ -312,6 +312,8 @@ public class NatsServerRunner implements AutoCloseable {
         _builder = b;
         _executablePath = b.executablePath == null ? getResolvedServerPath() : b.executablePath.toString();
         _ports = b.ports;
+
+        // we always want to have a value in the map for these keys
         Integer tempPort = _ports.get(CONFIG_PORT_KEY);
         if (tempPort == null) {
             _ports.put(CONFIG_PORT_KEY, -1);
@@ -558,6 +560,7 @@ public class NatsServerRunner implements AutoCloseable {
         int userPort = _ports.get(USER_PORT_KEY); // already ensured so it's not -1
         int natsPort = -1;
         int level = 0;
+        String indent = "";
         while (iterator.hasNext()) {
             String line = iterator.next();
             String trim = line.trim();
@@ -585,9 +588,11 @@ public class NatsServerRunner implements AutoCloseable {
             else {
                 if (trim.endsWith("{")) {
                     level++;
+                    //noinspection StringConcatenationInLoop
+                    indent = indent + "  ";
                 }
                 else if (trim.startsWith("}")) {
-                    level--;
+                    indent = indent.substring(2);
                 }
                 // replacing it here allows us to not care if the port is at the top level
                 // or for instance inside a websocket block
@@ -603,7 +608,7 @@ public class NatsServerRunner implements AutoCloseable {
                     else {
                         _ports.put(NON_NATS_PORT_KEY, userPort);
                     }
-                    writeConfigLine(writer, PORT_PROPERTY + userPort);
+                    writeConfigLine(writer, indent + PORT_PROPERTY + userPort);
                 }
                 else {
                     mappedPortMatcher.reset(line);
@@ -631,17 +636,19 @@ public class NatsServerRunner implements AutoCloseable {
             }
         }
 
-        if (natsPort == -1) {
-            if (userTaken) {
-                _ports.put(NATS_PORT_KEY, 4222);
+        if (!portEntryDone) {
+            if (natsPort == -1) {
+                if (userTaken) {
+                    _ports.put(NATS_PORT_KEY, 4222);
+                }
+                else {
+                    _ports.put(NATS_PORT_KEY, userPort);
+                    writePortLine(writer, userPort);
+                }
             }
             else {
-                _ports.put(NATS_PORT_KEY, userPort);
-                writePortLine(writer, userPort);
+                _ports.put(NATS_PORT_KEY, natsPort);
             }
-        }
-        else {
-            _ports.put(NATS_PORT_KEY, natsPort);
         }
     }
 
@@ -682,13 +689,19 @@ public class NatsServerRunner implements AutoCloseable {
     }
 
     /**
-     * Get the port number. Useful if it was automatically assigned
+     * Get the user port number. Same as getUserPort
      * @return the port number
      */
     public int getPort() {
         return getUserPort();
     }
 
+    /**
+     * Get the "user" port. The port that was provided in the config or the port that was generated
+     * if a config port was not provided. Usually, but the nats port, but will be the non-nats port
+     * if only a non-nats port config placeholder was provided
+     * @return the port number
+     */
     public int getUserPort() {
         return _ports.get(USER_PORT_KEY);
     }
@@ -734,6 +747,14 @@ public class NatsServerRunner implements AutoCloseable {
      * @return the command line
      */
     public String getCmdLine() {
+        return _cmdLine;
+    }
+
+    /**
+     * Get the command line used to start the server
+     * @return the command line
+     */
+    public String getCommandLine() {
         return _cmdLine;
     }
 
