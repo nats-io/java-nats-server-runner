@@ -34,7 +34,7 @@ public abstract class NatsRunnerUtils {
     public static final String PORT_MAPPED_REGEX = "port:\\s*<(\\w+)>";
     public static final String PORT_PROPERTY = "port: ";
     public static final String CONFIG_PORT_KEY = "config_port";
-    public static final String USER_PORT_KEY = "user_port";
+    public static final String READY_PORT_KEY = "ready_to_use_port";
     public static final String NATS_PORT_KEY = "nats_port";
     public static final String NON_NATS_PORT_KEY = "non_nats_port";
 

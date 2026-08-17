@@ -76,8 +76,8 @@ public class TestBase {
     }
 
     protected void validateHostAndPort(NatsServerRunner server) {
-        assertTrue(server.getPort() > 0);
-        assertTrue(server.getPort() != 1234);
+        assertTrue(server.getNatsPort() > 0);
+        assertTrue(server.getNatsPort() != 1234);
         assertTrue(server.getNatsLocalhostUri().startsWith(natsLocalHostFromDefaultNoPort()));
     }
 
@@ -99,10 +99,10 @@ public class TestBase {
     protected void validateConfigLines(NatsServerRunner runner, List<String> expected) throws IOException {
         List<String> lines = getConfigLinesRemoveEmpty(runner);
         if (lines == null) {
-            assertTrue(runner.getCmdLine().contains("port " + runner.getPort()));
+            assertTrue(runner.getCmdLine().contains("port " + runner.getNatsPort()));
         }
         else {
-            assertTrue(lines.contains("port: " + runner.getPort()));
+            assertTrue(lines.contains("port: " + runner.getNatsPort()));
             if (expected != null) {
                 for (String ex : expected) {
                     assertTrue(lines.contains(ex));

@@ -208,42 +208,42 @@ public class NatsServerRunnerTest extends TestBase {
     public void testDebugConstructorNextPortFalse() throws Exception {
         int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(false, false, () -> new NatsServerRunner(port, false));
-        assertEquals(port, runner.getPort());
+        assertEquals(port, runner.getNatsPort());
     }
 
     @Test
     public void testDebugConstructorNextPortTrue() throws Exception {
         int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(true, false, () -> new NatsServerRunner(port, true));
-        assertEquals(port, runner.getPort());
+        assertEquals(port, runner.getNatsPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortFalseFalse() throws Exception {
         int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(false, false, () -> new NatsServerRunner(port, false, false));
-        assertEquals(port, runner.getPort());
+        assertEquals(port, runner.getNatsPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortTrueFalse() throws Exception {
         int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(true, false, () -> new NatsServerRunner(port, true, false));
-        assertEquals(port, runner.getPort());
+        assertEquals(port, runner.getNatsPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortFalseTrue() throws Exception {
         int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(false, true, () -> new NatsServerRunner(port, false, true));
-        assertEquals(port, runner.getPort());
+        assertEquals(port, runner.getNatsPort());
     }
 
     @Test
     public void testDebugJsConstructorNextPortTrueTrue() throws Exception {
         int port = nextPort();
         NatsServerRunner runner = validateVariousConstructors(true, true, () -> new NatsServerRunner(port, true, true));
-        assertEquals(port, runner.getPort());
+        assertEquals(port, runner.getNatsPort());
     }
 
     interface RunnerSupplier {
@@ -325,8 +325,18 @@ public class NatsServerRunnerTest extends TestBase {
     }
 
     @Test
-    public void testWithConfigBuilder_ws_and_user() throws Exception {
-        _testWithConfig("ws_and_user.conf", false, true, false, true, true);
+    public void testWithConfigBuilder_ws_and_user_0() throws Exception {
+        _testWithConfig("ws_and_user_0.conf", false, true, false, true, true);
+    }
+
+    @Test
+    public void testWithConfigBuilder_ws_and_user_1234() throws Exception {
+        _testWithConfig("ws_and_user_1234.conf", false, true, false, true, true);
+    }
+
+    @Test
+    public void testWithConfigBuilder_wss() throws Exception {
+        _testWithConfig("wss.conf", false, true, false, false, true);
     }
 
     @Test
@@ -342,6 +352,7 @@ public class NatsServerRunnerTest extends TestBase {
             .autoStart(checkConnect)
             .build())
         {
+             System.out.println("_testWithConfig | " + configFile + " | " + runner.getReadyPort() + " | " + runner.getNatsPort() + " | " + runner.getNonNatsPort() + " | " + runner.getCommandLine());
             validateCommandLine(runner, false, js);
             validateHostAndPort(runner);
             if (validateMatchConfig) {
@@ -352,7 +363,7 @@ public class NatsServerRunnerTest extends TestBase {
             }
 
             assertEquals(-1, runner.getConfigPort());
-            assertNotEquals(-1, runner.getUserPort());
+            assertNotEquals(-1, runner.getReadyPort());
 
             if (natsPortSet) {
                 assertNotEquals(-1, runner.getNatsPort());
@@ -433,21 +444,21 @@ public class NatsServerRunnerTest extends TestBase {
             try (NatsServerRunner runner = builder.build()) {
                 assertEquals(-1, runner.getConfigPort());
 
-                Integer userPort = runner.getPort(USER_PORT_KEY);
-                assertEquals(userPort, runner.getUserPort());
+                Integer userPort = runner.getMappedPort(READY_PORT_KEY);
+                assertEquals(userPort, runner.getReadyPort());
 
-                Integer natsPort = runner.getPort(NATS_PORT_KEY);
+                Integer natsPort = runner.getMappedPort(NATS_PORT_KEY);
                 assertEquals(natsPort, runner.getNatsPort());
 
-                Integer nonNatsPort = runner.getPort(NON_NATS_PORT_KEY);
+                Integer nonNatsPort = runner.getMappedPort(NON_NATS_PORT_KEY);
                 assertEquals(nonNatsPort, runner.getNonNatsPort());
 
                 if (pMapped) {
-                    assertEquals(pPortIn, runner.getPort("p"));
+                    assertEquals(pPortIn, runner.getMappedPort("p"));
                 }
 
                 if (wsMapped) {
-                    assertEquals(wsPortIn, runner.getPort("ws"));
+                    assertEquals(wsPortIn, runner.getMappedPort("ws"));
                 }
 
                 switch (natsMatch) {
@@ -474,11 +485,11 @@ public class NatsServerRunnerTest extends TestBase {
             }
         }
         catch (RuntimeException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             throw e;
         }
         catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -487,7 +498,11 @@ public class NatsServerRunnerTest extends TestBase {
     public void testTooManyUserPorts() {
         assertThrows(IOException.class, () ->
             builder()
-                .configFilePath(SOURCE_CONFIG_FILE_PATH + "config_port_user_ws_user.conf")
+                .configFilePath(SOURCE_CONFIG_FILE_PATH + "too_many_ports.conf")
+                .build());
+        assertThrows(IOException.class, () ->
+            builder()
+                .configFilePath(SOURCE_CONFIG_FILE_PATH + "too_many_ports_ws.conf")
                 .build());
     }
 
@@ -564,7 +579,7 @@ public class NatsServerRunnerTest extends TestBase {
 
         try (NatsServerRunner sr = builder.build()) {
             assertNotEquals(4222, sr.getNatsPort());
-            assertEquals(1, sr.getPort("foo"));
+            assertEquals(1, sr.getMappedPort("foo"));
         }
 
         try(NatsServerRunner sr = new NatsServerRunner((String[])null, -1, true)) {
@@ -603,7 +618,8 @@ public class NatsServerRunnerTest extends TestBase {
     }
 
     @Test
-    public void testBadConfig() throws Exception {
+    public void testBadConfig() {
+        //noinspection unused
         try (NatsServerRunner runner = builder()
             .configFilePath(SOURCE_CONFIG_FILE_PATH + "bad.conf")
             .output(new ConsoleOutput())
@@ -630,13 +646,13 @@ public class NatsServerRunnerTest extends TestBase {
         assertEquals(1, runner.getConfigLines().size());
         assertEquals("port: 2222", runner.getConfigLines().get(0));
     }
-
-    static void basicRunnerDebug(NatsServerRunner runner) {
-        System.out.println(runner.getCmdLine());
-        for (String s : runner.getConfigLines()) {
-            System.out.println(s);
-        }
-    }
+//
+//    static void basicRunnerDebug(NatsServerRunner runner) {
+//        System.out.println(runner.getCmdLine());
+//        for (String s : runner.getConfigLines()) {
+//            System.out.println(s);
+//        }
+//    }
 
     @Test
     public void testTlsFirst() {
