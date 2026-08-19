@@ -16,6 +16,7 @@ package io.nats;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -27,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ClusterUtilsTest extends TestBase {
 
     @Test
-    public void testCreateClusterInserts() {
+    public void testCreateClusterInserts() throws IOException {
         Path jsStoreDirBase = Paths.get("path");
         int p = DEFAULT_CLUSTER_DEFAULTS.getPortStart();
         int l = DEFAULT_CLUSTER_DEFAULTS.getListenStart();

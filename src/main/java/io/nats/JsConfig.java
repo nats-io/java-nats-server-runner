@@ -13,6 +13,8 @@
 
 package io.nats;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,39 +27,44 @@ import java.util.List;
  */
 public class JsConfig {
     public static final String STORE_DIR = "store_dir";
-    public static final String INDENT = "    ";
+    public static final String INDENT = "  ";
 
     public final String storeDir;
     public final List<String> configInserts;
 
     public JsConfig() throws IOException {
-        this(Files.createTempDirectory(null).toString(), null);
+        this(null, null);
     }
 
-    public JsConfig(Path dirPath) {
-        this(dirPath.toString(), null);
+    public JsConfig(Path dirPath) throws IOException {
+        this(null, dirPath.toString());
     }
 
     public JsConfig(List<String> lines) throws IOException {
-        this(Files.createTempDirectory(null).toString(), lines);
+        this(lines, null);
     }
 
-    private JsConfig(String inputDir, List<String> inputLines)  {
-        this.storeDir = STORE_DIR + "=" + fixDir(inputDir);
+    // Files.createTempDirectory(null).toString()
+
+    private JsConfig(List<String> inLines, @Nullable String inStoreDir) throws IOException {
+
+        String storeDir = "";
 
         configInserts = new ArrayList<>();
         configInserts.add("jetstream {");
 
-        List<String> lines = null;
-        if (inputLines != null && !inputLines.isEmpty()) {
-            // combine and remove spaces to make it easier to parse
+        if (inLines != null && !inLines.isEmpty()) {
             StringBuilder sbx = new StringBuilder();
-            for (String line : inputLines) {
-                sbx.append(line.trim().replaceAll(" ", ""));
+            for (String line : inLines) {
+                String trim = line.trim();
+                String[] split = trim.split(",");
+                for (String s : split) {
+                    sbx.append(s).append("↩");
+                }
             }
-            String s = sbx.toString();
+            String s = sbx.substring(0, sbx.length() - 1);
             if (!s.startsWith("jetstream")) {
-                throw new IllegalArgumentException("Input not recognized as jetstream block");
+                throw new IllegalArgumentException("JsConfig[1] Input not recognized as jetstream block");
             }
 
             if (!s.endsWith("enabled")) {
@@ -65,21 +72,50 @@ public class JsConfig {
                 // it must then start with '{' or ':{'
                 // it must end with }
                 if ((!s.startsWith("{") || !s.startsWith(":{")) && !s.endsWith("}")) {
-                    throw new IllegalArgumentException("Input not recognized as jetstream block");
+                    throw new IllegalArgumentException("JsConfig[2] Input not recognized as jetstream block");
                 }
 
                 // skip past { and don't include end }
                 int at = s.indexOf("{");
                 s = s.substring(at + 1, s.length() - 1);
-                String[] split = s.split(",");
-                for (String config : split) {
-                    if (!config.isEmpty() && !config.contains(STORE_DIR)) {
-                        configInserts.add(INDENT + config + ",");
+                String[] split = s.split("↩");
+                for (String ss : split) {
+                    String config = ss.trim();
+                    if (!config.isEmpty()) {
+                        if (config.contains(STORE_DIR)) {
+                            at = config.indexOf(":");
+                            if (at == -1) {
+                                at = config.indexOf("=");
+                                if (at == -1) {
+                                    at = config.indexOf(" ");
+                                }
+                            }
+                            if (at != -1) {
+                                storeDir = config.substring(at + 1).trim();
+                            }
+                        }
+                        else {
+                            configInserts.add(INDENT + config + ",");
+                        }
                     }
+                }
+                int lastI = configInserts.size() - 1;
+                if (lastI > 0) {
+                    String last = configInserts.get(lastI);
+                    last = last.substring(0, last.length() - 1); // remove the comma
+                    configInserts.set(lastI, last);
                 }
             }
         }
-        configInserts.add(INDENT + this.storeDir);
+
+        if (storeDir.isEmpty()) {
+            storeDir = inStoreDir == null
+                ? fixDir(Files.createTempDirectory(null).toString())
+                : inStoreDir;
+        }
+        this.storeDir = storeDir;
+
+        configInserts.add(INDENT + STORE_DIR + "=" + this.storeDir);
         configInserts.add("}");
     }
 

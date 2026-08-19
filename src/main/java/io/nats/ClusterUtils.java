@@ -13,6 +13,7 @@
 
 package io.nats;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -24,19 +25,19 @@ public abstract class ClusterUtils {
     private ClusterUtils() {
     }
 
-    public static List<ClusterInsert> createClusterInserts() {
+    public static List<ClusterInsert> createClusterInserts() throws IOException {
         return createClusterInserts(createNodes());
     }
 
-    public static List<ClusterInsert> createClusterInserts(Path jsStoreDirBase) {
+    public static List<ClusterInsert> createClusterInserts(Path jsStoreDirBase) throws IOException {
         return createClusterInserts(createNodes(jsStoreDirBase));
     }
 
-    public static List<ClusterInsert> createClusterInserts(ClusterDefaults cd) {
+    public static List<ClusterInsert> createClusterInserts(ClusterDefaults cd) throws IOException {
         return createClusterInserts(createNodes(cd));
     }
 
-    public static List<ClusterInsert> createClusterInserts(ClusterDefaults cd, Path jsStoreDirBase) {
+    public static List<ClusterInsert> createClusterInserts(ClusterDefaults cd, Path jsStoreDirBase) throws IOException {
         return createClusterInserts(createNodes(cd, jsStoreDirBase));
     }
 
@@ -65,7 +66,7 @@ public abstract class ClusterUtils {
         return nodes;
     }
 
-    public static List<ClusterInsert> createClusterInserts(List<ClusterNode> nodes) {
+    public static List<ClusterInsert> createClusterInserts(List<ClusterNode> nodes) throws IOException {
         List<ClusterInsert> inserts = new ArrayList<>();
         for (ClusterNode node : nodes) {
             List<String> lines = new ArrayList<>();
