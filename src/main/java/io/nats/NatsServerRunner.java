@@ -743,14 +743,6 @@ public class NatsServerRunner implements AutoCloseable {
      * Get the command line used to start the server
      * @return the command line
      */
-    public String getCmdLine() {
-        return _cmdLine;
-    }
-
-    /**
-     * Get the command line used to start the server
-     * @return the command line
-     */
     public String getCommandLine() {
         return _cmdLine;
     }

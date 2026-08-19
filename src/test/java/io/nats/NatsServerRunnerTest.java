@@ -254,7 +254,7 @@ public class NatsServerRunnerTest extends TestBase {
         NatsServerRunner runner = supplier.get();
         validateBasics(runner, debug, jetStream, true);
         assertTrue(runner.getExecutablePath().contains("nats-server"));
-        String cmd = runner.getCmdLine();
+        String cmd = runner.getCommandLine();
         assertEquals(debug, cmd.contains(" -DV"));
         assertEquals(jetStream, cmd.contains(" -js"));
         runner.shutdown(true);
@@ -646,13 +646,6 @@ public class NatsServerRunnerTest extends TestBase {
         assertEquals(1, runner.getConfigLines().size());
         assertEquals("port: 2222", runner.getConfigLines().get(0));
     }
-//
-//    static void basicRunnerDebug(NatsServerRunner runner) {
-//        System.out.println(runner.getCmdLine());
-//        for (String s : runner.getConfigLines()) {
-//            System.out.println(s);
-//        }
-//    }
 
     @Test
     public void testTlsFirst() {
@@ -689,7 +682,7 @@ public class NatsServerRunnerTest extends TestBase {
     }
 
     private void validateJsStorage(NatsServerRunner runner) throws IOException {
-        assertTrue(runner.getCmdLine().contains(JETSTREAM_OPTION));
+        assertTrue(runner.getCommandLine().contains(JETSTREAM_OPTION));
         List<String> lines = Files.readAllLines(Paths.get(runner.getConfigFile()));
         validateContainsOneInstance(lines, "jetstream {");
         validateContainsOneInstance(lines, "store_dir=");

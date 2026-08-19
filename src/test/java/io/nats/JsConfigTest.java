@@ -19,62 +19,65 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static io.nats.JsConfig.STORE_DIR;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class JsConfigTest extends TestBase {
 
+    private static final String TEST_STORE_DIR = "StOrEdIr";
     @Test
     public void testConstruction() throws IOException {
         String expanded = "jetstream {\n" +
-            "   store_dir=blah,\n" +
+            "   store_dir=" + TEST_STORE_DIR + ",\n" +
             "   max_mem_store:1GB,\n" +
-            "   max_file_store:2GB\n" +
+            "   max_file_store:2GB,\n" +
+            "   domain: DOMAIN\n" +
             "}";
         String expandedAtEnd = "jetstream {\n" +
             "   max_mem_store:1GB,\n" +
             "   max_file_store:2GB,\n" +
-            "   store_dir=blah\n" +
+            "   domain: DOMAIN,\n" +
+            "   store_dir=" + TEST_STORE_DIR + "\n" +
             "}";
         String expandedJustJetStream = "jetstream {\n" +
             "}";
 
-        String inline = "jetstream {store_dir=blah,max_mem_store:1GB,max_file_store:2GB}";
-        String inlineAtEnd = "jetstream {max_mem_store:1GB,max_file_store:2GB,store_dir=blah}";
+        String inline = "jetstream {store_dir=" + TEST_STORE_DIR + ",max_mem_store:1GB,max_file_store:2GB,domain: DOMAIN}";
+        String inlineAtEnd = "jetstream {max_mem_store:1GB,max_file_store:2GB,domain: DOMAIN,store_dir=" + TEST_STORE_DIR + "}";
         String inlineJustJetStream = "jetstream {}";
 
-        String expandedNoValue = expanded.replace("blah", "");
-        String expandedAtEndNoValue = expandedAtEnd.replace("blah", "");
-        String inlineNoValue = inline.replace("blah", "");
-        String inlineAtEndNoValue = inlineAtEnd.replace("blah", "");
+        String expandedNoValue = expanded.replace(TEST_STORE_DIR, "");
+        String expandedAtEndNoValue = expandedAtEnd.replace(TEST_STORE_DIR, "");
+        String inlineNoValue = inline.replace(TEST_STORE_DIR, "");
+        String inlineAtEndNoValue = inlineAtEnd.replace(TEST_STORE_DIR, "");
 
         String expandedNoStore = expandedNoValue.replace("store_dir=,", "");
         String inlineNoStore = inlineNoValue.replace("store_dir=,", "");
 
-        validate5(expanded);
-        validate5(expandedAtEnd);
-        validate5(inline);
-        validate5(inlineAtEnd);
+        validate6(expanded, true);
+        validate6(expandedAtEnd, true);
+        validate6(inline, true);
+        validate6(inlineAtEnd, true);
 
-        validate5(expandedNoValue);
-        validate5(expandedAtEndNoValue);
-        validate5(inlineNoValue);
-        validate5(inlineAtEndNoValue);
+        validate6(expandedNoValue, false);
+        validate6(expandedAtEndNoValue, false);
+        validate6(inlineNoValue, false);
+        validate6(inlineAtEndNoValue, false);
 
-        validate5(expandedNoStore);
-        validate5(inlineNoStore);
+        validate6(expandedNoStore, false);
+        validate6(inlineNoStore, false);
 
-        validate3(new JsConfig());
-        validate3(new JsConfig(Files.createTempDirectory(null)));
+        validate3(new JsConfig(), false);
+        validate3(new JsConfig(Files.createTempDirectory(null)), false);
 
-        validate3("jetstream{}");
-        validate3("jetstream {}");
-        validate3("jetstream { }");
-        validate3(expandedJustJetStream);
-        validate3(inlineJustJetStream);
+        validate3("jetstream{}", false);
+        validate3("jetstream {}", false);
+        validate3("jetstream { }", false);
+        validate3(expandedJustJetStream, false);
+        validate3(inlineJustJetStream, false);
 
-        validate3(toConfig("jetstream: enabled"));
-        validate3(toConfig("jetstream:enabled"));
+        validate3(toConfig("jetstream: enabled"), false);
+        validate3(toConfig("jetstream:enabled"), false);
 
         assertThrows(IllegalArgumentException.class, () -> toConfig("x"));
         assertThrows(IllegalArgumentException.class, () -> toConfig("jetstream {"));
@@ -87,30 +90,39 @@ public class JsConfigTest extends TestBase {
         assertThrows(IllegalArgumentException.class, () -> toConfig("jetstream: x"));
     }
 
-    private static void validate3(String testString) throws IOException {
-        validate3(toConfig(testString));
-        validate3(toConfig(colonize(testString)));
+    private static void validate3(String testString, boolean expectTestStoreDir) throws IOException {
+        validate3(toConfig(testString), expectTestStoreDir);
+        validate3(toConfig(colonize(testString)), expectTestStoreDir);
+        validate3(toConfig(testString.replace("store_dir=", "store_dir:")), expectTestStoreDir);
+        validate3(toConfig(testString.replace("store_dir=", "store_dir ")), expectTestStoreDir);
     }
 
-    private static void validate3(JsConfig jsConfig) {
+    private static void validate3(JsConfig jsConfig, boolean expectTestStoreDir) {
         assertEquals(3, jsConfig.configInserts.size());
         assertEquals("jetstream {", jsConfig.configInserts.get(0));
-        assertEquals("    " + jsConfig.storeDir, jsConfig.configInserts.get(1));
+        assertEquals("  " + STORE_DIR + "=" + jsConfig.storeDir, jsConfig.configInserts.get(1));
         assertEquals("}", jsConfig.configInserts.get(2));
     }
 
-    private static void validate5(String testString) throws IOException {
-        validate5(toConfig(testString));
-        validate5(toConfig(colonize(testString)));
+    private static void validate6(String testString, boolean expectTestStoreDir) throws IOException {
+        validate6(toConfig(testString), expectTestStoreDir);
+        validate6(toConfig(colonize(testString)), expectTestStoreDir);
+        validate6(toConfig(testString.replace("store_dir=", "store_dir:")), expectTestStoreDir);
+        validate6(toConfig(testString.replace("store_dir=", "store_dir ")), expectTestStoreDir);
     }
 
-    private static void validate5(JsConfig jsConfig) {
-        assertEquals(5, jsConfig.configInserts.size());
+    private static void validate6(JsConfig jsConfig, boolean expectTestStoreDir) {
+        assertEquals(6, jsConfig.configInserts.size());
         assertEquals("jetstream {", jsConfig.configInserts.get(0));
-        assertEquals("    max_mem_store:1GB,", jsConfig.configInserts.get(1));
-        assertEquals("    max_file_store:2GB,", jsConfig.configInserts.get(2));
-        assertEquals("    " + jsConfig.storeDir, jsConfig.configInserts.get(3));
-        assertEquals("}", jsConfig.configInserts.get(4));
+        assertEquals("  max_mem_store:1GB,", jsConfig.configInserts.get(1));
+        assertEquals("  max_file_store:2GB,", jsConfig.configInserts.get(2));
+        assertEquals("  domain: DOMAIN", jsConfig.configInserts.get(3));
+        assertEquals("  " + STORE_DIR + "=" + jsConfig.storeDir, jsConfig.configInserts.get(4));
+        assertEquals("}", jsConfig.configInserts.get(5));
+        if (expectTestStoreDir) {
+            assertEquals(TEST_STORE_DIR, jsConfig.storeDir);
+            assertTrue(jsConfig.configInserts.get(4).contains(TEST_STORE_DIR));
+        }
     }
 
     private static String colonize(String jsString) {

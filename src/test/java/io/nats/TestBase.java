@@ -41,6 +41,13 @@ public class TestBase {
         setDefaultOutputLevel(Level.ALL);
     }
 
+    public static void basicRunnerDebug(NatsServerRunner runner) {
+        System.out.println(runner.getCommandLine());
+        for (String s : runner.getConfigLines()) {
+            System.out.println(s);
+        }
+    }
+
     public static String localHostFromDefaultNoPort(String schema) {
         return schema + "://" + getDefaultLocalhostHost().host;
     }
@@ -67,7 +74,7 @@ public class TestBase {
     }
 
     protected void validateCommandLine(NatsServerRunner runner, boolean debug, boolean jetStream, String... customArgs) {
-        String cmdline = runner.getCmdLine();
+        String cmdline = runner.getCommandLine();
         assertEquals(debug, cmdline.contains(" " + DebugLevel.DEBUG_TRACE.getCmdOption()));
         assertEquals(jetStream, cmdline.contains(" " + JETSTREAM_OPTION));
         for (String ca : customArgs) {
@@ -99,7 +106,7 @@ public class TestBase {
     protected void validateConfigLines(NatsServerRunner runner, List<String> expected) throws IOException {
         List<String> lines = getConfigLinesRemoveEmpty(runner);
         if (lines == null) {
-            assertTrue(runner.getCmdLine().contains("port " + runner.getNatsPort()));
+            assertTrue(runner.getCommandLine().contains("port " + runner.getNatsPort()));
         }
         else {
             assertTrue(lines.contains("port: " + runner.getNatsPort()));
@@ -108,6 +115,17 @@ public class TestBase {
                     assertTrue(lines.contains(ex));
                 }
             }
+        }
+    }
+
+    protected static List<String> getConfigLines(NatsServerRunner runner) throws IOException {
+        String cfg = runner.getConfigFile();
+        if (cfg == null) {
+            return null;
+        }
+        try (Stream<String> stream = Files.lines(new File(cfg).toPath())) {
+            return stream.map(String::trim)
+                .collect(toUnmodifiableList());
         }
     }
 
