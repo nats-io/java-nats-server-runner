@@ -7,8 +7,8 @@ Run the [NATS messaging system](https://nats.io) Server from your Java code.
 Useful for running unit or integration tests on the localhost.
 
 
-![4.0.0](https://img.shields.io/badge/Current_Release-4.0.0-27AAE0?style=for-the-badge)
-![4.0.1](https://img.shields.io/badge/Current_Snapshot-4.0.1--SNAPSHOT-27AAE0?style=for-the-badge)
+![4.0.1](https://img.shields.io/badge/Current_Release-4.0.1-27AAE0?style=for-the-badge)
+![4.0.2](https://img.shields.io/badge/Current_Snapshot-4.0.2--SNAPSHOT-27AAE0?style=for-the-badge)
 
 [![Build Main Badge](https://github.com/nats-io/java-nats-server-runner/actions/workflows/build-main.yml/badge.svg?event=push)](https://github.com/nats-io/java-nats-server-runner/actions/workflows/build-main.yml)
 [![Coverage Status](https://coveralls.io/repos/github/nats-io/java-nats-server-runner/badge.svg?branch=main)](https://coveralls.io/github/nats-io/java-nats-server-runner?branch=main)
@@ -121,7 +121,7 @@ The examples shown use the Jdk 8 version. To use other versions, change the arti
 
 ```groovy
 dependencies {
-    implementation 'io.nats:jnats-server-runner:4.0.0'
+    implementation 'io.nats:jnats-server-runner:4.0.1'
 }
 ```
 
@@ -147,7 +147,7 @@ repositories {
 }
 
 dependencies {
-   implementation 'io.nats:jnats-server-runner:4.0.1-SNAPSHOT'
+   implementation 'io.nats:jnats-server-runner:4.0.2-SNAPSHOT'
 }
 ```
 
@@ -157,7 +157,7 @@ dependencies {
 <dependency>
     <groupId>io.nats</groupId>
     <artifactId>jnats-server-runner</artifactId>
-    <version>4.0.0</version>
+    <version>4.0.1</version>
 </dependency>
 ```
 
@@ -191,7 +191,7 @@ If you need a snapshot version, you must enable snapshots and change your depend
 <dependency>
     <groupId>io.nats</groupId>
     <artifactId>jnats-server-runner</artifactId>
-    <version>4.0.1-SNAPSHOT</version>
+    <version>4.0.2-SNAPSHOT</version>
 </dependency>
 ```
 
