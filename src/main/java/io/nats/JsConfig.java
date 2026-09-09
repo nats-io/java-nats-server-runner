@@ -15,12 +15,14 @@ package io.nats;
 
 import org.jspecify.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
+import static io.nats.NatsRunnerUtils.cleanDir;
+import static io.nats.NatsRunnerUtils.fixDir;
 
 /**
  * An object representing the JetStream Storage dir
@@ -30,6 +32,16 @@ public class JsConfig {
     public static final String INDENT = "  ";
 
     public final String storeDir;
+    public final String fixedDir;
+
+    /**
+     * The store dir exactly as it was supplied, before any cleaning, or null if none was.
+     * Null for the no argument constructor, whose directory this object chose itself, and
+     * for a JetStream block that carried no store_dir. Reference only - use storeDir for
+     * the directory that will actually be used and fixedDir for the config file.
+     */
+    @Nullable public final String inStoreDir;
+
     public final List<String> configInserts;
 
     public JsConfig() throws IOException {
@@ -44,11 +56,9 @@ public class JsConfig {
         this(lines, null);
     }
 
-    // Files.createTempDirectory(null).toString()
-
     private JsConfig(List<String> inLines, @Nullable String inStoreDir) throws IOException {
 
-        String storeDir = "";
+        String tempStoreDir = "";
 
         configInserts = new ArrayList<>();
         configInserts.add("jetstream {");
@@ -64,7 +74,7 @@ public class JsConfig {
             }
             String s = sbx.substring(0, sbx.length() - 1);
             if (!s.startsWith("jetstream")) {
-                throw new IllegalArgumentException("JsConfig[1] Input not recognized as jetstream block");
+                throw new IllegalArgumentException("JsConfig[1] Input not recognized as JetStream block");
             }
 
             if (!s.endsWith("enabled")) {
@@ -72,7 +82,7 @@ public class JsConfig {
                 // it must then start with '{' or ':{'
                 // it must end with }
                 if ((!s.startsWith("{") || !s.startsWith(":{")) && !s.endsWith("}")) {
-                    throw new IllegalArgumentException("JsConfig[2] Input not recognized as jetstream block");
+                    throw new IllegalArgumentException("JsConfig[2] Input not recognized as JetStream block");
                 }
 
                 // skip past { and don't include end }
@@ -83,15 +93,19 @@ public class JsConfig {
                     String config = ss.trim();
                     if (!config.isEmpty()) {
                         if (config.contains(STORE_DIR)) {
-                            at = config.indexOf(":");
-                            if (at == -1) {
-                                at = config.indexOf("=");
-                                if (at == -1) {
-                                    at = config.indexOf(" ");
+                            // the separator is the first :, = or space after the key.
+                            // Searching the whole line finds the colon in a windows
+                            // drive letter instead and eats "store_dir=C".
+                            at = -1;
+                            for (int x = config.indexOf(STORE_DIR) + STORE_DIR.length(); x < config.length(); x++) {
+                                char c = config.charAt(x);
+                                if (c == ':' || c == '=' || c == ' ') {
+                                    at = x;
+                                    break;
                                 }
                             }
                             if (at != -1) {
-                                storeDir = config.substring(at + 1).trim();
+                                tempStoreDir = config.substring(at + 1).trim();
                             }
                         }
                         else {
@@ -108,22 +122,24 @@ public class JsConfig {
             }
         }
 
-        if (storeDir.isEmpty()) {
-            storeDir = inStoreDir == null
-                ? fixDir(Files.createTempDirectory(null).toString())
-                : inStoreDir;
-        }
-        this.storeDir = storeDir;
+        // whatever the caller handed over, untouched, from either route. Not the
+        // generated temp directory, which nobody supplied.
+        this.inStoreDir = tempStoreDir.isEmpty() ? inStoreDir : tempStoreDir;
 
-        configInserts.add(INDENT + STORE_DIR + "=" + this.storeDir);
+        if (tempStoreDir.isEmpty()) {
+            // the generated dir goes through cleanDir as well, both so storeDir means the
+            // same thing on every branch and so the space check covers a temp directory we
+            // did not choose. On windows that is under C:\Users\<user name>\AppData.
+            this.storeDir = cleanDir(inStoreDir == null
+                ? Files.createTempDirectory(null).toString()
+                : inStoreDir);
+        }
+        else {
+            this.storeDir = cleanDir(tempStoreDir);
+        }
+        fixedDir = fixDir(this.storeDir);
+
+        configInserts.add(INDENT + STORE_DIR + "=" + fixedDir);
         configInserts.add("}");
     }
-
-    private static String fixDir(String dir) {
-        if (File.separatorChar == '\\') {
-            return dir.replace("\\", "\\\\").replace("/", "\\\\");
-        }
-        return dir.replace("\\", "/");
-    }
-
 }

@@ -14,8 +14,10 @@
 package io.nats;
 
 import java.io.*;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,7 +64,7 @@ public class NatsServerRunner implements AutoCloseable {
      * <ul>
      * <li>use an automatically allocated port</li>
      * <li>no debug flag</li>
-     * <li>jetstream not enabled</li>
+     * <li>JetStream not enabled</li>
      * <li>no custom config file</li>
      * <li>no config inserts</li>
      * <li>no custom args</li>
@@ -77,7 +79,7 @@ public class NatsServerRunner implements AutoCloseable {
      * Construct and start the Nats Server runner with defaults:
      * <ul>
      * <li>use an automatically allocated port</li>
-     * <li>jetstream not enabled</li>
+     * <li>JetStream not enabled</li>
      * <li>no custom config file</li>
      * <li>no config inserts</li>
      * <li>no custom args</li>
@@ -111,7 +113,7 @@ public class NatsServerRunner implements AutoCloseable {
     /**
      * Construct and start the Nats Server runner with defaults:
      * <ul>
-     * <li>jetstream not enabled</li>
+     * <li>JetStream not enabled</li>
      * <li>no custom config file</li>
      * <li>no config inserts</li>
      * <li>no custom args</li>
@@ -147,7 +149,7 @@ public class NatsServerRunner implements AutoCloseable {
      * Consider using {@link Builder}
      * <ul>
      * <li>use an automatically allocated port</li>
-     * <li>jetstream not enabled</li>
+     * <li>JetStream not enabled</li>
      * <li>no config inserts</li>
      * <li>no custom args</li>
      * </ul>
@@ -165,7 +167,7 @@ public class NatsServerRunner implements AutoCloseable {
      * Consider using {@link Builder}
      * <ul>
      * <li>use an automatically allocated port</li>
-     * <li>jetstream not enabled</li>
+     * <li>JetStream not enabled</li>
      * <li>no custom config file</li>
      * </ul>
      * and these options:
@@ -182,7 +184,7 @@ public class NatsServerRunner implements AutoCloseable {
      * Construct and start the Nats Server runner with defaults:
      * Consider using {@link Builder}
      * <ul>
-     * <li>jetstream not enabled</li>
+     * <li>JetStream not enabled</li>
      * <li>no custom args</li>
      * </ul>
      * and these options:
@@ -200,7 +202,7 @@ public class NatsServerRunner implements AutoCloseable {
      * Construct and start the Nats Server runner with defaults:
      * Consider using {@link Builder}
      * <ul>
-     * <li>jetstream not enabled</li>
+     * <li>JetStream not enabled</li>
      * <li>no config inserts</li>
      * <li>no custom args</li>
      * </ul>
@@ -220,7 +222,7 @@ public class NatsServerRunner implements AutoCloseable {
      * <ul>
      * <li>use an automatically allocated port</li>
      * <li>no debug flag</li>
-     * <li>jetstream not enabled</li>
+     * <li>JetStream not enabled</li>
      * <li>no custom config file</li>
      * <li>no config inserts</li>
      * </ul>
@@ -237,7 +239,7 @@ public class NatsServerRunner implements AutoCloseable {
      * Consider using {@link Builder}
      * <ul>
      * <li>use an automatically allocated port</li>
-     * <li>jetstream not enabled</li>
+     * <li>JetStream not enabled</li>
      * <li>no custom config file</li>
      * <li>no config inserts</li>
      * </ul>
@@ -272,7 +274,7 @@ public class NatsServerRunner implements AutoCloseable {
      * Construct and start the Nats Server runner with defaults:
      * Consider using {@link Builder}
      * <ul>
-     * <li>jetstream not enabled</li>
+     * <li>JetStream not enabled</li>
      * <li>no custom config file</li>
      * <li>no config inserts</li>
      * </ul>
@@ -447,12 +449,25 @@ public class NatsServerRunner implements AutoCloseable {
 
             if (connectValidateTries > 0) {
                 triesLeft = connectValidateTries;
-                try {
-                    isServerReachable(_ports.get(NATS_PORT_KEY), connectValidateTimeout);
-                }
-                catch (Exception e) {
-                    if (--triesLeft == 0) {
-                        throw e;
+                while (true) {
+                    try {
+                        isServerReachable(_ports.get(NATS_PORT_KEY), connectValidateTimeout);
+                        break;
+                    }
+                    catch (ConnectException | SocketTimeoutException e) {
+                        // Both of these mean "not listening yet" and are worth another go:
+                        // refused when nothing has bound the port, timed out when the
+                        // connect does not complete in time. Anything else, a port outside
+                        // 0-65535 for instance, will not fix itself and should surface now
+                        // rather than 3 sleeps later.
+                        if (--triesLeft == 0) {
+                            throw e;
+                        }
+                        // refused comes back immediately rather than using up the timeout,
+                        // so without this the retries would all fire at once. The client
+                        // port can lag the process, behind a websocket listener for one,
+                        // which binds first.
+                        sleep(connectValidateTimeout);
                     }
                 }
             }
@@ -528,7 +543,10 @@ public class NatsServerRunner implements AutoCloseable {
 
     public static void isServerReachable(int port, long timeoutMs) throws IOException {
         try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(LocalHost.unspecified.host, port), (int)timeoutMs);
+            // 0.0.0.0 is a bind address, not a connect address. It only reaches a server
+            // that bound every interface, so a config that pins net: to an interface, or
+            // to localhost, looks unreachable. Loopback reaches both.
+            socket.connect(new InetSocketAddress(LocalHost.ip.host, port), (int)timeoutMs);
         }
     }
 
@@ -558,9 +576,9 @@ public class NatsServerRunner implements AutoCloseable {
             String trim = line.trim();
             if (trim.startsWith("jetstream") && level == 0) {
                 if (jsBlockDone) {
-                    throw new IOException("Improper configuration, cannot have multiple top level jetstream blocks.");
+                    throw new IOException("Improper configuration, cannot have multiple top level JetStream blocks.");
                 }
-                // extract jetstream
+                // extract JetStream
                 if (trim.endsWith("enabled")) {
                     _jsConfig.set(new JsConfig());
                 }
@@ -695,8 +713,8 @@ public class NatsServerRunner implements AutoCloseable {
 
     /**
      * Get the "ready" port. The port that was provided in the config or the port that was generated
-     * if a config port was not provided. Usually, but the nats port, but will be the non-nats port
-     * if only a non-nats port config placeholder was provided
+     * if a config port was not provided. Usually it will be the same as the nats port,
+     * but will be the non-nats port if only a non-nats port config placeholder was provided
      * @return the port number
      */
     public int getReadyPort() {
