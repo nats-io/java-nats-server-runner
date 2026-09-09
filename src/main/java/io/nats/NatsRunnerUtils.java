@@ -13,6 +13,7 @@
 
 package io.nats;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -233,5 +234,38 @@ public abstract class NatsRunnerUtils {
 
     public static void setDefaultLocalhostHost(LocalHost defaultLocalhostHost) {
         DefaultLocalhostHost = defaultLocalhostHost;
+    }
+
+    public static String fixDir(String dir) {
+        if (File.separatorChar == '\\') {
+            return dir.replace("\\", "\\\\").replace("/", "\\\\");
+        }
+        return dir.replace("\\", "/");
+    }
+
+    public static String cleanDir(String dir) {
+        // The conf parser ends an unquoted value at a space, so a store dir containing one
+        // cannot start the server. Fail here with something readable rather than letting
+        // nats-server report a parse error on a line the caller never wrote.
+        if (dir.contains(" ")) {
+            throw new IllegalArgumentException("Store directory may not contain a space: " + dir);
+        }
+        // collapsing an escaped separator is undoing conf file escaping, so it applies
+        // on any platform. A leading \\ is a UNC prefix, not an escaped separator, and
+        // collapsing it would turn \\server\share into \server\share, a different place.
+        boolean unc = dir.startsWith("\\\\");
+        while (dir.contains("\\\\")) {
+            dir = dir.replace("\\\\", "\\");
+        }
+        if (unc) {
+            dir = "\\" + dir;
+        }
+        if (File.separatorChar == '\\') {
+            return dir;
+        }
+        // on non-windows a backslash is a legal filename character but is almost always a
+        // windows path that got in by mistake. Normalizing here rather than only in
+        // fixDir keeps storeDir and fixedDir naming the same directory.
+        return dir.replace("\\", "/");
     }
 }
